@@ -1,0 +1,5667 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Spare Parts Finder</title>
+    <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        body { font-family: Arial, sans-serif; padding: 20px; background-color: #f7f7f7; }
+        .container { max-width: 800px; margin: auto; background-color: #fff; padding: 20px; border-radius: 8px; box-shadow: 0 0 10px rgba(0, 0, 0, 0.1); margin-bottom: 20px; }
+        .header { text-align: center; margin-bottom: 20px; }
+       
+        .header img {
+    max-width: 248px;
+    margin-bottom: 9px;
+}
+        .header h1 { margin-bottom: 10px; }
+        .header p { color: #555; font-size: 18px; }
+        .form-group { margin-bottom: 20px; }
+        label { display: block; margin-bottom: 5px; font-weight: bold; }
+        select, input, button { width: 100%; padding: 10px; font-size: 16px; margin-bottom: 10px; }
+        .result-item { background: #f8f9fa; margin: 10px 0; padding: 15px; border-radius: 5px; border: 1px solid #ddd; }
+        .result-item strong { display: block; margin-bottom: 5px; }
+    </style>
+</head>
+<body>
+    <div class="container header">
+        <img src="gac.png" alt="Gulf Asia co"> <!-- Replace with your logo URL -->
+        <h1>Spare Parts Finder</h1>
+        <p>Your one-stop solution for all vehicle and equipment spare parts!</p>
+    </div>
+
+    <div class="container">
+        <div class="form-group">
+            <label for="fleet-type">Fleet Type:</label>
+            <select id="fleet-type" onchange="updateMakes()">
+                <option value="">Select Fleet Type</option>
+            </select>
+        </div>
+        <div class="form-group">
+            <label for="make">Make:</label>
+            <select id="make" onchange="updateCapacities()">
+                <option value="">Select Make</option>
+            </select>
+        </div>
+        <div class="form-group">
+            <label for="capacity">Capacity:</label>
+            <select id="capacity" onchange="updateResourceDescriptions()">
+                <option value="">Select Capacity</option>
+            </select>
+        </div>
+        <div class="form-group">
+            <label for="resource-description">Resource Description:</label>
+            <select id="resource-description" class="searchable-dropdown">
+                <option value="">Select Resource Description</option>
+            </select>
+        </div>
+        <button class="btn btn-primary" onclick="findSpareParts()">Search</button>
+        <h2 class="mt-4">Spare Parts</h2>
+        <div id="spare-parts-list"></div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/jquery@3.6.0/dist/jquery.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+    <script>
+        // Embedded JSON Data (Your JSON data from the uploaded file)
+        const sparePartsData = [
+          {
+            "FleetDesc": "POWER GENERATOR",
+            "Capacity": "600 KVA",
+            "Make": "KIRLOSKAR",
+            "Model": "660WS50",
+            "ResourceDescription": "OIL FILTER 1",
+            "ResourceCode": 14000451,
+            "PARTNO": "DV0.014.27.00",
+            "BinLocation": "PORTABLE-1",
+            "RackNo": "B2-215"
+          },
+          {
+            "FleetDesc": "POWER GENERATOR",
+            "Capacity": "600 KVA",
+            "Make": "KIRLOSKAR",
+            "Model": "660WS50",
+            "ResourceDescription": "OIL FILTER 2",
+            "ResourceCode": 14003059,
+            "PARTNO": "DVO01411000",
+            "BinLocation": "PORTABLE-1",
+            "RackNo": "B2-214"
+          },
+          {
+            "FleetDesc": "POWER GENERATOR",
+            "Capacity": "600 KVA",
+            "Make": "KIRLOSKAR",
+            "Model": "660WS50",
+            "ResourceDescription": "FUEL FILTER",
+            "ResourceCode": 14011386,
+            "PARTNO": "DV0.020.03.0.00",
+            "BinLocation": "PORTABLE-1",
+            "RackNo": "B2-213",
+            "REMARKS": "REQ QTY-2"
+          },
+
+
+          // Add all other entries from your JSON file here
+
+          {
+    "FleetDesc": "POWER GENERATOR",
+    "Capacity": "600 KVA",
+    "Make": "KIRLOSKAR",
+    "Model": "660WS50",
+    "ResourceDescription": "OIL FILTER 1",
+    "ResourceCode": 14000451,
+    "PARTNO": "DV0.014.27.00",
+    "BinLocation": "PORTABLE-1",
+    "RackNo": "B2-215"
+  },
+  {
+    "FleetDesc": "POWER GENERATOR",
+    "Capacity": "600 KVA",
+    "Make": "KIRLOSKAR",
+    "Model": "660WS50",
+    "ResourceDescription": "OIL FILTER 2",
+    "ResourceCode": 14003059,
+    "PARTNO": "DVO01411000",
+    "BinLocation": "PORTABLE-1",
+    "RackNo": "B2-214"
+  },
+  {
+    "FleetDesc": "POWER GENERATOR",
+    "Capacity": "600 KVA",
+    "Make": "KIRLOSKAR",
+    "Model": "660WS50",
+    "ResourceDescription": "FUEL FILTER",
+    "ResourceCode": 14011386,
+    "PARTNO": "DV0.020.03.0.00",
+    "BinLocation": "PORTABLE-1",
+    "RackNo": "B2-213",
+    "REMARKS": "REQ QTY-2"
+  },
+  {
+    "FleetDesc": "POWER GENERATOR",
+    "Capacity": "600 KVA",
+    "Make": "KIRLOSKAR",
+    "Model": "660WS50",
+    "ResourceDescription": "FUEL WATER SEPARATOR",
+    "ResourceCode": 14003060,
+    "PARTNO": "DV804024000",
+    "BinLocation": "PORTABLE-1",
+    "RackNo": "A4-30"
+  },
+  {
+    "FleetDesc": "ROLLER COMPACTOR ",
+    "Capacity": "10 TON",
+    "Make": "BOMAG",
+    "Model": "BW212D-40",
+    "ResourceDescription": "OIL FILTER",
+    "ResourceCode": 14003489,
+    "PARTNO": 5710640,
+    "BinLocation": "PORTABLE-2",
+    "RackNo": "C2-61"
+  },
+  {
+    "FleetDesc": "ROLLER COMPACTOR ",
+    "Capacity": "10 TON",
+    "Make": "BOMAG",
+    "Model": "BW212D-40",
+    "ResourceDescription": "FUEL FILTER",
+    "ResourceCode": 14003490,
+    "PARTNO": 5716779,
+    "BinLocation": "PORTABLE-2",
+    "RackNo": "C2-62"
+  },
+  {
+    "FleetDesc": "ROLLER COMPACTOR ",
+    "Capacity": "10 TON",
+    "Make": "BOMAG",
+    "Model": "BW212D-40",
+    "ResourceDescription": "FUEL WATER SEPARATOR",
+    "ResourceCode": 14003491,
+    "PARTNO": 5825015,
+    "BinLocation": "PORTABLE-2",
+    "RackNo": "C2-63"
+  },
+  {
+    "FleetDesc": "ROLLER COMPACTOR ",
+    "Capacity": "10 TON",
+    "Make": "BOMAG",
+    "Model": "BW212D-40",
+    "ResourceDescription": "AIR FILTER 1",
+    "ResourceCode": 14003488,
+    "PARTNO": 5821148,
+    "BinLocation": "PORTABLE-2",
+    "RackNo": "C2-60"
+  },
+  {
+    "FleetDesc": "ROLLER COMPACTOR ",
+    "Capacity": "10 TON",
+    "Make": "BOMAG",
+    "Model": "BW212D-40",
+    "ResourceDescription": "AIR FILTER 2",
+    "ResourceCode": 14003487,
+    "PARTNO": 5821147,
+    "BinLocation": "PORTABLE-2",
+    "RackNo": "C2-59"
+  },
+  {
+    "FleetDesc": "ROLLER COMPACTOR ",
+    "Capacity": "10 TON",
+    "Make": "BOMAG",
+    "Model": "BW212D-5 DL",
+    "ResourceDescription": "OIL FILTER",
+    "ResourceCode": 14003489,
+    "PARTNO": 5710640,
+    "BinLocation": "PORTABLE-2",
+    "RackNo": "C2-61"
+  },
+  {
+    "FleetDesc": "ROLLER COMPACTOR ",
+    "Capacity": "10 TON",
+    "Make": "BOMAG",
+    "Model": "BW212D-5 DL",
+    "ResourceDescription": "FUEL FILTER",
+    "ResourceCode": 14003490,
+    "PARTNO": 5716779,
+    "BinLocation": "PORTABLE-2",
+    "RackNo": "C2-62"
+  },
+  {
+    "FleetDesc": "ROLLER COMPACTOR ",
+    "Capacity": "10 TON",
+    "Make": "BOMAG",
+    "Model": "BW212D-5 DL",
+    "ResourceDescription": "FUEL WATER SEPARATOR",
+    "ResourceCode": 14003491,
+    "PARTNO": 5825015,
+    "BinLocation": "PORTABLE-2",
+    "RackNo": "C2-63"
+  },
+  {
+    "FleetDesc": "ROLLER COMPACTOR ",
+    "Capacity": "10 TON",
+    "Make": "BOMAG",
+    "Model": "BW212D-5 DL",
+    "ResourceDescription": "AIR FILTER 1",
+    "ResourceCode": 14003488,
+    "PARTNO": 5821148,
+    "BinLocation": "PORTABLE-2",
+    "RackNo": "C2-60"
+  },
+  {
+    "FleetDesc": "ROLLER COMPACTOR ",
+    "Capacity": "10 TON",
+    "Make": "BOMAG",
+    "Model": "BW212D-5 DL",
+    "ResourceDescription": "AIR FILTER 2",
+    "ResourceCode": 14003487,
+    "PARTNO": 5821147,
+    "BinLocation": "PORTABLE-2",
+    "RackNo": "C2-59"
+  },
+  {
+    "FleetDesc": "ROLLER COMPACTOR ",
+    "Capacity": "10 TON",
+    "Make": "BOMAG",
+    "Model": "BWD212D-5 SL",
+    "ResourceDescription": "OIL FILTER",
+    "ResourceCode": 14003489,
+    "PARTNO": 5710640,
+    "BinLocation": "PORTABLE-2",
+    "RackNo": "C2-61"
+  },
+  {
+    "FleetDesc": "ROLLER COMPACTOR ",
+    "Capacity": "10 TON",
+    "Make": "BOMAG",
+    "Model": "BWD212D-5 SL",
+    "ResourceDescription": "FUEL FILTER",
+    "ResourceCode": 14003490,
+    "PARTNO": 5716779,
+    "BinLocation": "PORTABLE-2",
+    "RackNo": "C2-62"
+  },
+  {
+    "FleetDesc": "ROLLER COMPACTOR ",
+    "Capacity": "10 TON",
+    "Make": "BOMAG",
+    "Model": "BWD212D-5 SL",
+    "ResourceDescription": "FUEL WATER SEPARATOR",
+    "ResourceCode": 14003491,
+    "PARTNO": 5825015,
+    "BinLocation": "PORTABLE-2",
+    "RackNo": "C2-63"
+  },
+  {
+    "FleetDesc": "ROLLER COMPACTOR ",
+    "Capacity": "10 TON",
+    "Make": "BOMAG",
+    "Model": "BWD212D-5 SL",
+    "ResourceDescription": "AIR FILTER 1",
+    "ResourceCode": 14003488,
+    "PARTNO": 5821148,
+    "BinLocation": "PORTABLE-2",
+    "RackNo": "C2-60"
+  },
+  {
+    "FleetDesc": "ROLLER COMPACTOR ",
+    "Capacity": "10 TON",
+    "Make": "BOMAG",
+    "Model": "BWD212D-5 SL",
+    "ResourceDescription": "AIR FILTER 2",
+    "ResourceCode": 14003487,
+    "PARTNO": 5821147,
+    "BinLocation": "PORTABLE-2",
+    "RackNo": "C2-59"
+  },
+  {
+    "FleetDesc": "POWER GENERATOR",
+    "Capacity": "5 KVA",
+    "Make": "KUBOTA",
+    "Model": "GL6000",
+    "ResourceDescription": "STARTER",
+    "ResourceCode": 14021817,
+    "PARTNO": 1685363014,
+    "BinLocation": "CONTAINER-3",
+    "RackNo": "B15-0003"
+  },
+  {
+    "FleetDesc": "POWER GENERATOR",
+    "Capacity": "5 KVA",
+    "Make": "KUBOTA",
+    "Model": "GL6000",
+    "ResourceDescription": "OIL FILTER",
+    "ResourceCode": 14021811,
+    "PARTNO": "SP-1002",
+    "BinLocation": "CONTAINER-3",
+    "RackNo": "B15-0004"
+  },
+  {
+    "FleetDesc": "POWER GENERATOR",
+    "Capacity": "5 KVA",
+    "Make": "KUBOTA",
+    "Model": "GL6000",
+    "ResourceDescription": "AIR FILTER",
+    "ResourceCode": 14021810,
+    "PARTNO": "MD-566",
+    "BinLocation": "CONTAINER-3",
+    "RackNo": "B15-0007"
+  },
+  {
+    "FleetDesc": "POWER GENERATOR",
+    "Capacity": "5 KVA",
+    "Make": "KUBOTA",
+    "Model": "GL6000",
+    "ResourceDescription": "V-BELT",
+    "ResourceCode": 14021818,
+    "PARTNO": "AX 33",
+    "BinLocation": "CONTAINER-3",
+    "RackNo": "B15-0041"
+  },
+  {
+    "FleetDesc": "TOWER LIGHT",
+    "Capacity": "8 KVA",
+    "Make": "WACKER NEUSON",
+    "Model": "LTN6L",
+    "ResourceDescription": "OIL FILTER",
+    "ResourceCode": 14014513,
+    "PARTNO": 1000003052,
+    "BinLocation": "CONTAINER-3",
+    "RackNo": "A5-0035",
+    "REMARKS": "NEW MODEL"
+  },
+  {
+    "FleetDesc": "TOWER LIGHT",
+    "Capacity": "8 KVA",
+    "Make": "WACKER NEUSON",
+    "Model": "LTN6L",
+    "ResourceDescription": "FUEL FILTER",
+    "ResourceCode": 14014514,
+    "PARTNO": 1000004614,
+    "BinLocation": "CONTAINER-3",
+    "RackNo": "A5-0036",
+    "REMARKS": "NEW MODEL"
+  },
+  {
+    "FleetDesc": "TOWER LIGHT",
+    "Capacity": "8 KVA",
+    "Make": "WACKER NEUSON",
+    "Model": "LTN6L",
+    "ResourceDescription": "FUEL STRAINER FILTER",
+    "ResourceCode": 14014515,
+    "PARTNO": 5100041144,
+    "BinLocation": "CONTAINER-3",
+    "RackNo": "A5-0037",
+    "REMARKS": "NEW MODEL"
+  },
+  {
+    "FleetDesc": "TOWER LIGHT",
+    "Capacity": "8 KVA",
+    "Make": "WACKER NEUSON",
+    "Model": "LTN6L",
+    "ResourceDescription": "AIR FILTER",
+    "ResourceCode": 14014516,
+    "PARTNO": 5100053832,
+    "BinLocation": "CONTAINER-3",
+    "RackNo": "A5-0043",
+    "REMARKS": "NEW MODEL"
+  },
+  {
+    "FleetDesc": "TOWER LIGHT",
+    "Capacity": "8 KVA",
+    "Make": "WACKER NEUSON",
+    "Model": "LTN6L",
+    "ResourceDescription": "V-BELT",
+    "ResourceCode": 14014517,
+    "BinLocation": "CONTAINER-3",
+    "RackNo": "A5-0044",
+    "REMARKS": "NEW MODEL"
+  },
+  {
+    "FleetDesc": "TOWER LIGHT",
+    "Capacity": "5 - 7.5 KVA",
+    "Make": "WACKER NEUSON",
+    "Model": "LTN6L",
+    "ResourceDescription": "OIL FILTER",
+    "ResourceCode": 14014513,
+    "PARTNO": 1000003052,
+    "BinLocation": "CONTAINER-3",
+    "RackNo": "A5-0035",
+    "REMARKS": "NEW MODEL"
+  },
+  {
+    "FleetDesc": "TOWER LIGHT",
+    "Capacity": "5 - 7.5 KVA",
+    "Make": "WACKER NEUSON",
+    "Model": "LTN6L",
+    "ResourceDescription": "FUEL FILTER",
+    "ResourceCode": 14014514,
+    "PARTNO": 1000004614,
+    "BinLocation": "CONTAINER-3",
+    "RackNo": "A5-0036",
+    "REMARKS": "NEW MODEL"
+  },
+  {
+    "FleetDesc": "TOWER LIGHT",
+    "Capacity": "5 - 7.5 KVA",
+    "Make": "WACKER NEUSON",
+    "Model": "LTN6L",
+    "ResourceDescription": "FUEL STRAINER FILTER",
+    "ResourceCode": 14014515,
+    "PARTNO": 5100041144,
+    "BinLocation": "CONTAINER-3",
+    "RackNo": "A5-0037",
+    "REMARKS": "NEW MODEL"
+  },
+  {
+    "FleetDesc": "TOWER LIGHT",
+    "Capacity": "5 - 7.5 KVA",
+    "Make": "WACKER NEUSON",
+    "Model": "LTN6L",
+    "ResourceDescription": "AIR FILTER",
+    "ResourceCode": 14014516,
+    "PARTNO": 5100053832,
+    "BinLocation": "CONTAINER-3",
+    "RackNo": "A5-0043",
+    "REMARKS": "NEW MODEL"
+  },
+  {
+    "FleetDesc": "TOWER LIGHT",
+    "Capacity": "5 - 7.5 KVA",
+    "Make": "WACKER NEUSON",
+    "Model": "LTN6L",
+    "ResourceDescription": "V-BELT",
+    "ResourceCode": 14014517,
+    "BinLocation": "CONTAINER-3",
+    "RackNo": "A5-0044",
+    "REMARKS": "NEW MODEL"
+  },
+  {
+    "FleetDesc": "TOWER LIGHT",
+    "Capacity": "3.5 KVA",
+    "Make": "WACKER NEUSON",
+    "Model": "LTS4K",
+    "ResourceDescription": "OIL FILTER",
+    "ResourceCode": 14001126,
+    "PARTNO": "LF 17508",
+    "BinLocation": "CONTAINER-2",
+    "RackNo": "C1-0033",
+    "REMARKS": "OLD MODEL"
+  },
+  {
+    "FleetDesc": "TOWER LIGHT",
+    "Capacity": "3.5 KVA",
+    "Make": "WACKER NEUSON",
+    "Model": "LTS4K",
+    "ResourceDescription": "FUEL FILTER",
+    "ResourceCode": 14001124,
+    "PARTNO": "FF 5040",
+    "BinLocation": "CONTAINER-2",
+    "RackNo": "C1-0034",
+    "REMARKS": "OLD MODEL"
+  },
+  {
+    "FleetDesc": "TOWER LIGHT",
+    "Capacity": "3.5 KVA",
+    "Make": "WACKER NEUSON",
+    "Model": "LTS4K",
+    "ResourceDescription": "AIR FILTER",
+    "ResourceCode": 14003896,
+    "PARTNO": "P622148",
+    "BinLocation": "CONTAINER-2",
+    "RackNo": "C1-0032",
+    "REMARKS": "OLD MODEL"
+  },
+  {
+    "FleetDesc": "POWER GENERATOR",
+    "Capacity": "100 KVA",
+    "Make": "KIRLOSKAR",
+    "Model": "110WS50",
+    "ResourceDescription": "OIL FILTER",
+    "ResourceCode": 14000804,
+    "BinLocation": "PORTABLE-1",
+    "RackNo": "B6-233",
+    "REMARKS": "REQ QTY-2"
+  },
+  {
+    "FleetDesc": "POWER GENERATOR",
+    "Capacity": "100 KVA",
+    "Make": "KIRLOSKAR",
+    "Model": "110WS50",
+    "ResourceDescription": "FUEL FILTER",
+    "ResourceCode": 14002576,
+    "BinLocation": "PORTABLE-1",
+    "RackNo": "A2-21"
+  },
+  {
+    "FleetDesc": "POWER GENERATOR",
+    "Capacity": "100 KVA",
+    "Make": "KIRLOSKAR",
+    "Model": "110WS50",
+    "ResourceDescription": "FUEL WATER SEPARATOR",
+    "ResourceCode": 14019982,
+    "BinLocation": "PORTABLE-2",
+    "RackNo": "D-DWN-218"
+  },
+  {
+    "FleetDesc": "WHEEL LOADER",
+    "Capacity": "3.40 CUM",
+    "Make": "SEM",
+    "Model": "SEM655D",
+    "ResourceDescription": "OIL FILTER",
+    "ResourceCode": 14020160,
+    "BinLocation": "PORTABLE-2",
+    "RackNo": "A2-199"
+  },
+  {
+    "FleetDesc": "WHEEL LOADER",
+    "Capacity": "3.40 CUM",
+    "Make": "SEM",
+    "Model": "SEM655D",
+    "ResourceDescription": "FUEL FILTER",
+    "ResourceCode": 14020158,
+    "BinLocation": "PORTABLE-2",
+    "RackNo": "A2-197"
+  },
+  {
+    "FleetDesc": "WHEEL LOADER",
+    "Capacity": "3.40 CUM",
+    "Make": "SEM",
+    "Model": "SEM655D",
+    "ResourceDescription": "FUEL WATER SEPARATOR",
+    "ResourceCode": 14020159,
+    "BinLocation": "PORTABLE-2",
+    "RackNo": "A2-198"
+  },
+  {
+    "FleetDesc": "WHEEL LOADER",
+    "Capacity": "3.40 CUM",
+    "Make": "SEM",
+    "Model": "SEM655D",
+    "ResourceDescription": "AIR FILTER",
+    "ResourceCode": 14022557,
+    "BinLocation": "PORTABLE-2",
+    "RackNo": "F1-250"
+  },
+  {
+    "FleetDesc": "EXCAVATOR",
+    "Capacity": "1 CUM",
+    "Make": "CATERPILLER",
+    "Model": "320D2L",
+    "EngineMakeModel": "CATERPILLAR C 7.1",
+    "ResourceDescription": "OIL FILTER",
+    "ResourceCode": 14000659,
+    "PARTNO": "322-3155",
+    "BinLocation": "PORTABLE-1",
+    "RackNo": "B4-0226"
+  },
+  {
+    "FleetDesc": "EXCAVATOR",
+    "Capacity": "1 CUM",
+    "Make": "CATERPILLER",
+    "Model": "320D2L",
+    "EngineMakeModel": "CATERPILLAR C 7.1",
+    "ResourceDescription": "FUEL FILTER",
+    "ResourceCode": 14000668,
+    "PARTNO": "1R-1804",
+    "BinLocation": "PORTABLE-1",
+    "RackNo": "B4-0227"
+  },
+  {
+    "FleetDesc": "EXCAVATOR",
+    "Capacity": "1 CUM",
+    "Make": "CATERPILLER",
+    "Model": "320D2L",
+    "EngineMakeModel": "CATERPILLAR C 7.1",
+    "ResourceDescription": "FUEL WATER SEPARATOR",
+    "ResourceCode": 14000667,
+    "PARTNO": 4385386,
+    "BinLocation": "PORTABLE-1",
+    "RackNo": "B4-0223"
+  },
+  {
+    "FleetDesc": "EXCAVATOR",
+    "Capacity": "1 CUM",
+    "Make": "CATERPILLER",
+    "Model": "320D2L",
+    "EngineMakeModel": "CATERPILLAR C 7.1",
+    "ResourceDescription": "HYDRAULIC OIL FILTER 1",
+    "ResourceCode": 14000671,
+    "PARTNO": "51-8670",
+    "BinLocation": "PORTABLE-1",
+    "RackNo": "B4-0225"
+  },
+  {
+    "FleetDesc": "EXCAVATOR",
+    "Capacity": "1 CUM",
+    "Make": "CATERPILLER",
+    "Model": "320D2L",
+    "EngineMakeModel": "CATERPILLAR C 7.1",
+    "ResourceDescription": "HYDRAULIC OIL FILTER 2",
+    "ResourceCode": 14000672,
+    "PARTNO": "093-7521",
+    "BinLocation": "PORTABLE-1",
+    "RackNo": "B4-0224"
+  },
+  {
+    "FleetDesc": "EXCAVATOR",
+    "Capacity": "1 CUM",
+    "Make": "JCB",
+    "Model": "NXT 205LC",
+    "EngineMakeModel": "CUMMINS 6BT5.9C",
+    "ResourceDescription": "OIL FILTER",
+    "ResourceCode": 14010494,
+    "PARTNO": "333/Y7453",
+    "BinLocation": "PORTABLE-2",
+    "RackNo": "D1-0076"
+  },
+  {
+    "FleetDesc": "EXCAVATOR",
+    "Capacity": "1 CUM",
+    "Make": "JCB",
+    "Model": "NXT 205LC",
+    "EngineMakeModel": "CUMMINS 6BT5.9C",
+    "ResourceDescription": "FUEL FILTER",
+    "ResourceCode": 14006344,
+    "PARTNO": "336/E9731",
+    "BinLocation": "PORTABLE-2",
+    "RackNo": "D1-0074"
+  },
+  {
+    "FleetDesc": "EXCAVATOR",
+    "Capacity": "1 CUM",
+    "Make": "JCB",
+    "Model": "NXT 205LC",
+    "EngineMakeModel": "CUMMINS 6BT5.9C",
+    "ResourceDescription": "FUEL WATER SEPARATOR",
+    "ResourceCode": 14006343,
+    "PARTNO": "336/E9730",
+    "BinLocation": "PORTABLE-2",
+    "RackNo": "D1-0075"
+  },
+  {
+    "FleetDesc": "EXCAVATOR",
+    "Capacity": "1 CUM",
+    "Make": "JCB",
+    "Model": "NXT 205LC",
+    "EngineMakeModel": "CUMMINS 6BT5.9C",
+    "ResourceDescription": "AIR FILTER 2",
+    "ResourceCode": 14006341,
+    "PARTNO": "334/Y2811",
+    "BinLocation": "PORTABLE-2",
+    "RackNo": "D2-0077"
+  },
+  {
+    "FleetDesc": "EXCAVATOR",
+    "Capacity": "1 CUM",
+    "Make": "JCB",
+    "Model": "NXT 205LC",
+    "EngineMakeModel": "CUMMINS 6BT5.9C",
+    "ResourceDescription": "AIR FILTER 1",
+    "ResourceCode": 14006340,
+    "PARTNO": "334/Y2810",
+    "BinLocation": "PORTABLE-2",
+    "RackNo": "D2-0078"
+  },
+  {
+    "FleetDesc": "EXCAVATOR",
+    "Capacity": "1 CUM",
+    "Make": "JCB",
+    "Model": "NXT 205LC",
+    "EngineMakeModel": "CUMMINS 6BT5.9C",
+    "ResourceDescription": "AC FILTER",
+    "ResourceCode": 14006258,
+    "PARTNO": "30/926020",
+    "BinLocation": "PORTABLE-2",
+    "RackNo": "D2-0099"
+  },
+  {
+    "FleetDesc": "MINI EXCAVATOR",
+    "Capacity": "0.053 CUM",
+    "Make": "BOB CAT",
+    "Model": "E37",
+    "ResourceDescription": "OIL FILTER",
+    "ResourceCode": 14000710,
+    "PARTNO": 6675517,
+    "BinLocation": "PORTABLE-1",
+    "RackNo": "A10-0113"
+  },
+  {
+    "FleetDesc": "MINI EXCAVATOR",
+    "Capacity": "0.053 CUM",
+    "Make": "BOB CAT",
+    "Model": "E37",
+    "ResourceDescription": "FUEL FILTER",
+    "ResourceCode": 14018891,
+    "PARTNO": "BC6667352",
+    "BinLocation": "PORTABLE-1",
+    "RackNo": "A15-0432"
+  },
+  {
+    "FleetDesc": "MINI EXCAVATOR",
+    "Capacity": "0.053 CUM",
+    "Make": "BOB CAT",
+    "Model": "E37",
+    "ResourceDescription": "AIR FILTER 1",
+    "ResourceCode": 14018892,
+    "PARTNO": "BC6672467",
+    "BinLocation": "PORTABLE-1",
+    "RackNo": "A15-0427"
+  },
+  {
+    "FleetDesc": "MINI EXCAVATOR",
+    "Capacity": "0.053 CUM",
+    "Make": "BOB CAT",
+    "Model": "E37",
+    "ResourceDescription": "AIR FILTER 2",
+    "ResourceCode": 14018893,
+    "PARTNO": "BC6672468",
+    "BinLocation": "PORTABLE-1",
+    "RackNo": "A15-0428"
+  },
+  {
+    "FleetDesc": "MINI EXCAVATOR",
+    "Capacity": "0.053 CUM",
+    "Make": "BOB CAT",
+    "Model": "E37",
+    "ResourceDescription": "HYDRAULIC OIL FILTER",
+    "ResourceCode": 14006947,
+    "PARTNO": "BC6668819",
+    "BinLocation": "PORTABLE-1",
+    "RackNo": "A15-0426"
+  },
+  {
+    "FleetDesc": "MINI EXCAVATOR",
+    "Capacity": "0.053 CUM",
+    "Make": "BOB CAT",
+    "Model": "E37",
+    "ResourceDescription": "FAN BELT",
+    "ResourceCode": 14023208,
+    "PARTNO": 7359022,
+    "BinLocation": "PORTABLE-1",
+    "RackNo": "A15-0590"
+  },
+  {
+    "FleetDesc": "MINI EXCAVATOR",
+    "Capacity": "0.053 CUM",
+    "Make": "BOB CAT",
+    "Model": "E37",
+    "ResourceDescription": "ALTERNATOR BELT",
+    "ResourceCode": 14013482,
+    "PARTNO": 7009797,
+    "BinLocation": "PORTABLE-1",
+    "RackNo": "A15-0591"
+  },
+  {
+    "FleetDesc": "MINI EXCAVATOR",
+    "Capacity": "0.053 CUM",
+    "Make": "BOB CAT",
+    "Model": "E37",
+    "ResourceDescription": "AC AIR FILTER 1",
+    "ResourceCode": 14016853,
+    "PARTNO": "BC7176099",
+    "BinLocation": "PORTABLE-1",
+    "RackNo": "A15-0430"
+  },
+  {
+    "FleetDesc": "MINI EXCAVATOR",
+    "Capacity": "0.053 CUM",
+    "Make": "BOB CAT",
+    "Model": "E37",
+    "ResourceDescription": "AC AIR FILTER 2",
+    "ResourceCode": 14007057,
+    "PARTNO": "BC7222791",
+    "BinLocation": "PORTABLE-1",
+    "RackNo": "A15-0429"
+  },
+  {
+    "FleetDesc": "MINI EXCAVATOR",
+    "Capacity": "0.053 CUM",
+    "Make": "JCB",
+    "Model": "35Z-1",
+    "ResourceDescription": "OIL FILTER",
+    "ResourceCode": 14001698,
+    "PARTNO": "02/630935A",
+    "BinLocation": "PORTABLE-2",
+    "RackNo": "D2-0253"
+  },
+  {
+    "FleetDesc": "MINI EXCAVATOR",
+    "Capacity": "0.053 CUM",
+    "Make": "JCB",
+    "Model": "35Z-1",
+    "ResourceDescription": "FUEL FILTER",
+    "ResourceCode": 14022654,
+    "PARTNO": "32/922300",
+    "BinLocation": "PORTABLE-2",
+    "RackNo": "D2-0255"
+  },
+  {
+    "FleetDesc": "MINI EXCAVATOR",
+    "Capacity": "0.053 CUM",
+    "Make": "JCB",
+    "Model": "35Z-1",
+    "ResourceDescription": "FUEL WATER SEPARATOR",
+    "ResourceCode": 14022655,
+    "PARTNO": "32/925666",
+    "BinLocation": "PORTABLE-2",
+    "RackNo": "D2-0254"
+  },
+  {
+    "FleetDesc": "MINI EXCAVATOR",
+    "Capacity": "0.053 CUM",
+    "Make": "JCB",
+    "Model": "35Z-1",
+    "ResourceDescription": "AIR FILTER 1",
+    "ResourceCode": 14022656,
+    "PARTNO": "32/925348",
+    "BinLocation": "PORTABLE-2",
+    "RackNo": "D2-0256"
+  },
+  {
+    "FleetDesc": "MINI EXCAVATOR",
+    "Capacity": "0.053 CUM",
+    "Make": "JCB",
+    "Model": "35Z-1",
+    "ResourceDescription": "AIR FILTER 2",
+    "ResourceCode": 14022657,
+    "PARTNO": "32/925349",
+    "BinLocation": "PORTABLE-2",
+    "RackNo": "D2-0257"
+  },
+  {
+    "FleetDesc": "TOWER LIGHT",
+    "Capacity": "5 - 7.5 KVA",
+    "Make": "HIMOINSA",
+    "Model": "AS 4006",
+    "ResourceDescription": "OIL FILTER",
+    "ResourceCode": 14003373,
+    "PARTNO": 1193053170,
+    "BinLocation": "CONTAINER-2",
+    "RackNo": "C1-0155"
+  },
+  {
+    "FleetDesc": "TOWER LIGHT",
+    "Capacity": "5 - 7.5 KVA",
+    "Make": "HIMOINSA",
+    "Model": "AS 4006",
+    "ResourceDescription": "FUEL FILTER",
+    "ResourceCode": 14001883,
+    "PARTNO": 11980255810,
+    "BinLocation": "CONTAINER-2",
+    "RackNo": "C1-0154"
+  },
+  {
+    "FleetDesc": "TOWER LIGHT",
+    "Capacity": "5 - 7.5 KVA",
+    "Make": "HIMOINSA",
+    "Model": "AS 4006",
+    "ResourceDescription": "AIR FILTER 1",
+    "ResourceCode": 14019228,
+    "PARTNO": 11965125605,
+    "BinLocation": "CONTAINER-2",
+    "RackNo": "C1-0157"
+  },
+  {
+    "FleetDesc": "TOWER LIGHT",
+    "Capacity": "5 - 7.5 KVA",
+    "Make": "HIMOINSA",
+    "Model": "AS 4006",
+    "ResourceDescription": "AIR FILTER 2",
+    "ResourceCode": 14000109,
+    "PARTNO": "P535396",
+    "BinLocation": "CONTAINER-2",
+    "RackNo": "C1-0156"
+  },
+  {
+    "FleetDesc": "CONCRETE VIBRATOR",
+    "Capacity": "4.4 HP",
+    "Make": "WACKER NEUSON",
+    "Model": "L5000",
+    "ResourceDescription": "FITTING KEY",
+    "ResourceCode": 14022841,
+    "PARTNO": 5000071989,
+    "BinLocation": "PORTABLE-2",
+    "RackNo": "E2-0264"
+  },
+  {
+    "FleetDesc": "CONCRETE VIBRATOR",
+    "Capacity": "4.4 HP",
+    "Make": "WACKER NEUSON",
+    "Model": "L5000",
+    "ResourceDescription": "SEAL GAS KIT",
+    "ResourceCode": 14022843,
+    "PARTNO": 5000103705,
+    "BinLocation": "PORTABLE-2",
+    "RackNo": "E2-0265"
+  },
+  {
+    "FleetDesc": "CONCRETE VIBRATOR",
+    "Capacity": "4.4 HP",
+    "Make": "WACKER NEUSON",
+    "Model": "L5000",
+    "ResourceDescription": "GASKET",
+    "ResourceCode": 14022845,
+    "PARTNO": 5000206248,
+    "BinLocation": "PORTABLE-2",
+    "RackNo": "E2-0266"
+  },
+  {
+    "FleetDesc": "CONCRETE VIBRATOR",
+    "Capacity": "4.4 HP",
+    "Make": "WACKER NEUSON",
+    "Model": "L5000",
+    "ResourceDescription": "FUEL TANK CAP",
+    "ResourceCode": 14022846,
+    "PARTNO": 5000206241,
+    "BinLocation": "PORTABLE-2",
+    "RackNo": "E2-0267"
+  },
+  {
+    "FleetDesc": "CONCRETE VIBRATOR",
+    "Capacity": "4.4 HP",
+    "Make": "WACKER NEUSON",
+    "Model": "L5000",
+    "ResourceDescription": "TENSION SPRING",
+    "ResourceCode": 14022833,
+    "PARTNO": 5000218777,
+    "BinLocation": "PORTABLE-2",
+    "RackNo": "E2-0268"
+  },
+  {
+    "FleetDesc": "CONCRETE VIBRATOR",
+    "Capacity": "4.4 HP",
+    "Make": "WACKER NEUSON",
+    "Model": "L5000",
+    "ResourceDescription": "BELT TENSIONER",
+    "ResourceCode": 14022834,
+    "PARTNO": 5000218517,
+    "BinLocation": "PORTABLE-2",
+    "RackNo": "E2-0269"
+  },
+  {
+    "FleetDesc": "CONCRETE VIBRATOR",
+    "Capacity": "4.4 HP",
+    "Make": "WACKER NEUSON",
+    "Model": "L5000",
+    "ResourceDescription": "CONCRETE VIBRATOR DETENT PIN",
+    "ResourceCode": 14008085,
+    "PARTNO": 5100010851,
+    "BinLocation": "PORTABLE-2",
+    "RackNo": "E2-0270"
+  },
+  {
+    "FleetDesc": "CONCRETE VIBRATOR",
+    "Capacity": "4.4 HP",
+    "Make": "WACKER NEUSON",
+    "Model": "L5000",
+    "ResourceDescription": "COMPRESSION SPRING",
+    "ResourceCode": 14022836,
+    "PARTNO": 500071189,
+    "BinLocation": "PORTABLE-2",
+    "RackNo": "E2-0271"
+  },
+  {
+    "FleetDesc": "CONCRETE VIBRATOR",
+    "Capacity": "4.4 HP",
+    "Make": "WACKER NEUSON",
+    "Model": "L5000",
+    "ResourceDescription": "DETENT PIN",
+    "ResourceCode": 14022837,
+    "PARTNO": 500071184,
+    "BinLocation": "PORTABLE-2",
+    "RackNo": "E2-0272"
+  },
+  {
+    "FleetDesc": "CONCRETE VIBRATOR",
+    "Capacity": "4.4 HP",
+    "Make": "WACKER NEUSON",
+    "Model": "L5000",
+    "ResourceDescription": "GROOVED BALL BEARING",
+    "ResourceCode": 14022839,
+    "PARTNO": 5000218537,
+    "BinLocation": "PORTABLE-2",
+    "RackNo": "E2-0273"
+  },
+  {
+    "FleetDesc": "CONCRETE VIBRATOR",
+    "Capacity": "4.4 HP",
+    "Make": "WACKER NEUSON",
+    "Model": "L5000",
+    "ResourceDescription": "FLEXSHAFT ADAPTER",
+    "ResourceCode": 14008033,
+    "PARTNO": 500053934,
+    "BinLocation": "PORTABLE-2",
+    "RackNo": "E2-0263"
+  },
+  {
+    "FleetDesc": "CONCRETE VIBRATOR",
+    "Capacity": "4.4 HP",
+    "Make": "WACKER NEUSON",
+    "Model": "L5000",
+    "ResourceDescription": "V-BELT, RIBBED TYPE",
+    "ResourceCode": 14008080,
+    "PARTNO": 5000218538,
+    "BinLocation": "PORTABLE-2",
+    "RackNo": "E2-0172"
+  },
+  {
+    "FleetDesc": "FORKLIFT",
+    "Capacity": "7 MT",
+    "Make": "ZOOMLION",
+    "Model": "FD70",
+    "ResourceDescription": "OIL FILTER",
+    "ResourceCode": 14018634,
+    "PARTNO": 601100494,
+    "BinLocation": "CONTAINER-3",
+    "RackNo": "A14-0331",
+    "REMARKS": "7 TON TO 10 TON"
+  },
+  {
+    "FleetDesc": "FORKLIFT",
+    "Capacity": "7 MT",
+    "Make": "ZOOMLION",
+    "Model": "FD70",
+    "ResourceDescription": "FUEL FILTER",
+    "ResourceCode": 14018636,
+    "PARTNO": 601100495,
+    "BinLocation": "CONTAINER-3",
+    "RackNo": "A14-0332",
+    "REMARKS": "7 TON TO 10 TON"
+  },
+  {
+    "FleetDesc": "FORKLIFT",
+    "Capacity": "7 MT",
+    "Make": "ZOOMLION",
+    "Model": "FD70",
+    "ResourceDescription": "FUEL WATER SEPARATOR",
+    "ResourceCode": 14018635,
+    "PARTNO": 601070039,
+    "BinLocation": "CONTAINER-3",
+    "RackNo": "A15-0320",
+    "REMARKS": "7 TON TO 10 TON"
+  },
+  {
+    "FleetDesc": "FORKLIFT",
+    "Capacity": "7 MT",
+    "Make": "ZOOMLION",
+    "Model": "FD70",
+    "ResourceDescription": "AIR FILTER",
+    "ResourceCode": 14018637,
+    "PARTNO": 601010333,
+    "BinLocation": "CONTAINER-3",
+    "RackNo": "A16-0321",
+    "REMARKS": "7 TON TO 10 TON"
+  },
+  {
+    "FleetDesc": "FORKLIFT",
+    "Capacity": "7 MT",
+    "Make": "ZOOMLION",
+    "Model": "FD70",
+    "ResourceDescription": "TRANSMISSION OIL STRAINER",
+    "ResourceCode": 14018639,
+    "PARTNO": "YQX100-0200",
+    "BinLocation": "CONTAINER-3",
+    "RackNo": "A15-0323",
+    "REMARKS": "7 TON TO 10 TON"
+  },
+  {
+    "FleetDesc": "FORKLIFT",
+    "Capacity": "7 MT",
+    "Make": "ZOOMLION",
+    "Model": "FD70",
+    "ResourceDescription": "HYD OIL FILTER RETURN",
+    "ResourceCode": 14018638,
+    "PARTNO": "FB25DA-Y500",
+    "BinLocation": "CONTAINER-3",
+    "RackNo": "A15-0322",
+    "REMARKS": "7 TON TO 10 TON"
+  },
+  {
+    "FleetDesc": "FORKLIFT",
+    "Capacity": "7 MT",
+    "Make": "ZOOMLION",
+    "Model": "FD70",
+    "ResourceDescription": "HYD OIL FILTER SUCTION",
+    "ResourceCode": 14018644,
+    "PARTNO": "EF10098P",
+    "BinLocation": "CONTAINER-3",
+    "RackNo": "A14-0328",
+    "REMARKS": "7 TON TO 10 TON"
+  },
+  {
+    "FleetDesc": "FORKLIFT",
+    "Capacity": "15 MT",
+    "Make": "ZOOMLION",
+    "Model": "FD150",
+    "ResourceDescription": "OIL FILTER",
+    "ResourceCode": 14018640,
+    "PARTNO": "W0101000086",
+    "BinLocation": "CONTAINER-3",
+    "RackNo": "A15-0324",
+    "REMARKS": "15 TON"
+  },
+  {
+    "FleetDesc": "FORKLIFT",
+    "Capacity": "15 MT",
+    "Make": "ZOOMLION",
+    "Model": "FD150",
+    "ResourceDescription": "FUEL FILTER",
+    "ResourceCode": 14018642,
+    "PARTNO": "W0101000002",
+    "BinLocation": "CONTAINER-3",
+    "RackNo": "A15-0326",
+    "REMARKS": "15 TON"
+  },
+  {
+    "FleetDesc": "FORKLIFT",
+    "Capacity": "15 MT",
+    "Make": "ZOOMLION",
+    "Model": "FD150",
+    "ResourceDescription": "FUEL WATER SEPARATOR",
+    "ResourceCode": 14018641,
+    "PARTNO": "W0101000083",
+    "BinLocation": "CONTAINER-3",
+    "RackNo": "A15-0325",
+    "REMARKS": "15 TON"
+  },
+  {
+    "FleetDesc": "FORKLIFT",
+    "Capacity": "15 MT",
+    "Make": "ZOOMLION",
+    "Model": "FD150",
+    "ResourceDescription": "AIR FILTER",
+    "ResourceCode": 14018643,
+    "PARTNO": "KW2337-LX",
+    "BinLocation": "CONTAINER-3",
+    "RackNo": "A16-0327",
+    "REMARKS": "15 TON"
+  },
+  {
+    "FleetDesc": "FORKLIFT",
+    "Capacity": "15 MT",
+    "Make": "ZOOMLION",
+    "Model": "FD150",
+    "ResourceDescription": "OIL RETURN FILTER",
+    "ResourceCode": 14018642,
+    "PARTNO": "RFA-400",
+    "BinLocation": "CONTAINER-3",
+    "RackNo": "A16-0329",
+    "REMARKS": "15 TON"
+  },
+  {
+    "FleetDesc": "FORKLIFT",
+    "Capacity": "15 MT",
+    "Make": "ZOOMLION",
+    "Model": "FD150",
+    "ResourceDescription": "TRANSMISSION OIL STRAINER",
+    "ResourceCode": 14018646,
+    "PARTNO": "W0404000006",
+    "BinLocation": "CONTAINER-3",
+    "RackNo": "A14-0330",
+    "REMARKS": "15 TON"
+  },
+  {
+    "FleetDesc": "FORKLIFT",
+    "Capacity": "7 MT",
+    "Make": "HELI",
+    "Model": "CPCD70",
+    "ResourceDescription": "SOLINOID VALVE",
+    "ResourceCode": 14017205,
+    "PARTNO": "34E10BY24P"
+  },
+  {
+    "FleetDesc": "FORKLIFT",
+    "Capacity": "7 MT",
+    "Make": "HELI",
+    "Model": "CPCD70",
+    "ResourceDescription": "FUEL WATER SEPARATOR",
+    "ResourceCode": 14018635,
+    "PARTNO": 601070039,
+    "BinLocation": "CONTAINER-3",
+    "RackNo": "A15-0320"
+  },
+  {
+    "FleetDesc": "FORKLIFT",
+    "Capacity": "7 MT",
+    "Make": "HELI",
+    "Model": "CPCD70",
+    "ResourceDescription": "OIL FILTER",
+    "ResourceCode": 14001261,
+    "PARTNO": "20801-01441G",
+    "BinLocation": "PORTABLE-2",
+    "RackNo": "A1-0001"
+  },
+  {
+    "FleetDesc": "FORKLIFT",
+    "Capacity": "7 MT",
+    "Make": "HELI",
+    "Model": "CPCD70",
+    "ResourceDescription": "FUEL FILTER",
+    "ResourceCode": 14011307,
+    "PARTNO": "20801-02172",
+    "BinLocation": "PORTABLE-2",
+    "RackNo": "B2-0123"
+  },
+  {
+    "FleetDesc": "FORKLIFT",
+    "Capacity": "7 MT",
+    "Make": "HELI",
+    "Model": "CPCD70",
+    "ResourceDescription": "AIR FILTER 2",
+    "ResourceCode": 14001904,
+    "PARTNO": "P829333",
+    "BinLocation": "CONTAINER-3",
+    "RackNo": "A3-0022"
+  },
+  {
+    "FleetDesc": "FORKLIFT",
+    "Capacity": "7 MT",
+    "Make": "HELI",
+    "Model": "CPCD70",
+    "ResourceDescription": "AIR FILTER 1",
+    "ResourceCode": 14001903,
+    "PARTNO": "P828889",
+    "BinLocation": "CONTAINER-3",
+    "RackNo": "A3-0023"
+  },
+  {
+    "FleetDesc": "FORKLIFT",
+    "Capacity": "10 MT",
+    "Make": "TCM",
+    "Model": "FD100 ZB",
+    "ResourceDescription": "OIL FILTER",
+    "ResourceCode": 14015259,
+    "PARTNO": "20801-01441",
+    "BinLocation": "PORTABLE-2",
+    "RackNo": "B2-0122"
+  },
+  {
+    "FleetDesc": "FORKLIFT",
+    "Capacity": "10 MT",
+    "Make": "TCM",
+    "Model": "FD100 ZB",
+    "ResourceDescription": "FUEL FILTER",
+    "ResourceCode": 14011307,
+    "PARTNO": "20801-02172",
+    "BinLocation": "PORTABLE-2",
+    "RackNo": "B2-0123"
+  },
+  {
+    "FleetDesc": "FORKLIFT",
+    "Capacity": "10 MT",
+    "Make": "TCM",
+    "Model": "FD100 ZB",
+    "ResourceDescription": "AIR FILTER 2",
+    "ResourceCode": 14015260,
+    "PARTNO": "53060-62011",
+    "BinLocation": "PORTABLE-2",
+    "RackNo": "B3-0124"
+  },
+  {
+    "FleetDesc": "FORKLIFT",
+    "Capacity": "10 MT",
+    "Make": "TCM",
+    "Model": "FD100 ZB",
+    "ResourceDescription": "AIR FILTER 1",
+    "ResourceCode": 14011325,
+    "PARTNO": "20801-03511",
+    "BinLocation": "PORTABLE-2",
+    "RackNo": "B3-0125"
+  },
+  {
+    "FleetDesc": "FORKLIFT",
+    "Capacity": "7 MT",
+    "Make": "TOYOTA",
+    "Model": "8FD70N",
+    "ResourceDescription": "OIL FILTER",
+    "ResourceCode": 14001283,
+    "PARTNO": 5299223,
+    "BinLocation": "CONTAINER-3",
+    "RackNo": "A2-0009"
+  },
+  {
+    "FleetDesc": "FORKLIFT",
+    "Capacity": "7 MT",
+    "Make": "TOYOTA",
+    "Model": "8FD70N",
+    "ResourceDescription": "FUEL FILTER",
+    "ResourceCode": 14001284,
+    "PARTNO": "23390-64490",
+    "BinLocation": "CONTAINER-3",
+    "RackNo": "A2-0010"
+  },
+  {
+    "FleetDesc": "FORKLIFT",
+    "Capacity": "7 MT",
+    "Make": "TOYOTA",
+    "Model": "8FD70N",
+    "ResourceDescription": "AIR FILTER 1",
+    "ResourceCode": 14001903,
+    "PARTNO": "P828889",
+    "BinLocation": "CONTAINER-3",
+    "RackNo": "A3-0023"
+  },
+  {
+    "FleetDesc": "FORKLIFT",
+    "Capacity": "7 MT",
+    "Make": "TOYOTA",
+    "Model": "8FD70N",
+    "ResourceDescription": "AIR FILTER 2",
+    "ResourceCode": 14001904,
+    "PARTNO": "P829333",
+    "BinLocation": "CONTAINER-3",
+    "RackNo": "A3-0022"
+  },
+  {
+    "FleetDesc": "BACK HOE LOADER",
+    "Capacity": "1 CUM",
+    "Make": "GEHL",
+    "Model": "GBL X920",
+    "ResourceDescription": "OIL FILTER",
+    "ResourceCode": 14013873,
+    "PARTNO": 2654407,
+    "BinLocation": "PORTABLE-2",
+    "RackNo": "C1-0050"
+  },
+  {
+    "FleetDesc": "BACK HOE LOADER",
+    "Capacity": "1 CUM",
+    "Make": "GEHL",
+    "Model": "GBL X920",
+    "ResourceDescription": "FUEL FILTER",
+    "ResourceCode": 14004388,
+    "PARTNO": 4816636,
+    "BinLocation": "PORTABLE-2",
+    "RackNo": "C1-0052"
+  },
+  {
+    "FleetDesc": "BACK HOE LOADER",
+    "Capacity": "1 CUM",
+    "Make": "GEHL",
+    "Model": "GBL X920",
+    "ResourceDescription": "FUEL WATER SEPARATOR",
+    "ResourceCode": 14014165,
+    "PARTNO": 4415122,
+    "BinLocation": "PORTABLE-2",
+    "RackNo": "C1-0051"
+  },
+  {
+    "FleetDesc": "BACK HOE LOADER",
+    "Capacity": "1 CUM",
+    "Make": "GEHL",
+    "Model": "GBL X920",
+    "ResourceDescription": "AIR FILTER 1",
+    "ResourceCode": 14015264,
+    "PARTNO": 53107784,
+    "BinLocation": "PORTABLE-2",
+    "RackNo": "B3-0215"
+  },
+  {
+    "FleetDesc": "BACK HOE LOADER",
+    "Capacity": "1 CUM",
+    "Make": "GEHL",
+    "Model": "GBL X920",
+    "ResourceDescription": "AIR FILTER 2",
+    "ResourceCode": 14015265,
+    "PARTNO": 53107783,
+    "BinLocation": "PORTABLE-2",
+    "RackNo": "B3-0216"
+  },
+  {
+    "FleetDesc": "BACK HOE LOADER",
+    "Capacity": "BH 0.96 CUM - FH 1 CUM",
+    "Make": "CATERPILLER",
+    "Model": "416C",
+    "EngineMakeModel": "CATERPILLAR 3054 C",
+    "ResourceDescription": "OIL FILTER",
+    "ResourceCode": 14000990,
+    "PARTNO": "7W-2326",
+    "BinLocation": "PORTABLE-1",
+    "RackNo": "B8-0249"
+  },
+  {
+    "FleetDesc": "BACK HOE LOADER",
+    "Capacity": "BH 0.96 CUM - FH 1 CUM",
+    "Make": "CATERPILLER",
+    "Model": "416C",
+    "EngineMakeModel": "CATERPILLAR 3054 C",
+    "ResourceDescription": "FUEL FILTER",
+    "ResourceCode": 14009507,
+    "PARTNO": 3619554,
+    "BinLocation": "PORTABLE-1",
+    "RackNo": "B8-0436"
+  },
+  {
+    "FleetDesc": "BACK HOE LOADER",
+    "Capacity": "BH 0.96 CUM - FH 1 CUM",
+    "Make": "CATERPILLER",
+    "Model": "416C",
+    "EngineMakeModel": "CATERPILLAR 3054 C",
+    "ResourceDescription": "AIR FILTER 1",
+    "ResourceCode": 14019412,
+    "PARTNO": 3466687,
+    "BinLocation": "PORTABLE-1",
+    "RackNo": "A9-0438"
+  },
+  {
+    "FleetDesc": "BACK HOE LOADER",
+    "Capacity": "BH 0.96 CUM - FH 1 CUM",
+    "Make": "CATERPILLER",
+    "Model": "416C",
+    "EngineMakeModel": "CATERPILLAR 3054 C",
+    "ResourceDescription": "AIR FILTER 2",
+    "ResourceCode": 14019413,
+    "PARTNO": 2112661,
+    "BinLocation": "PORTABLE-1",
+    "RackNo": "A9-0437"
+  },
+  {
+    "FleetDesc": "BACK HOE LOADER",
+    "Capacity": "BH 0.96 CUM - FH 1 CUM",
+    "Make": "CATERPILLER",
+    "Model": "416C",
+    "EngineMakeModel": "CATERPILLAR 3054 C",
+    "ResourceDescription": "CABIN AIR FILTER",
+    "ResourceCode": 14019414,
+    "PARTNO": 2112660,
+    "BinLocation": "PORTABLE-1",
+    "RackNo": "A9-0439"
+  },
+  {
+    "FleetDesc": "BACK HOE LOADER",
+    "Capacity": "BH 0.96 CUM - FH 1 CUM",
+    "Make": "CATERPILLER",
+    "Model": "416C",
+    "EngineMakeModel": "CATERPILLAR 3054 C",
+    "ResourceDescription": "SIGNAL LAMP",
+    "ResourceCode": 14020874,
+    "PARTNO": 3369096,
+    "BinLocation": "PORTABLE-1",
+    "RackNo": "A9-0503"
+  },
+  {
+    "FleetDesc": "BACK HOE LOADER",
+    "Capacity": "BH 0.96 CUM - FH 1 CUM",
+    "Make": "CATERPILLER",
+    "Model": "416C",
+    "EngineMakeModel": "CATERPILLAR 3054 C",
+    "ResourceDescription": "HYDRAULIC FILTER 1",
+    "ResourceCode": 14004507,
+    "PARTNO": "362-1163",
+    "BinLocation": "PORTABLE-1",
+    "RackNo": "B8-0242"
+  },
+  {
+    "FleetDesc": "BACK HOE LOADER",
+    "Capacity": "BH 0.96 CUM - FH 1 CUM",
+    "Make": "CATERPILLER",
+    "Model": "416C",
+    "EngineMakeModel": "CATERPILLAR 3054 C",
+    "ResourceDescription": "HYDRAULIC FILTER 2",
+    "ResourceCode": 14004508,
+    "PARTNO": "471-7003",
+    "BinLocation": "PORTABLE-1",
+    "RackNo": "B8-0241"
+  },
+  {
+    "FleetDesc": "POWER GENERATOR",
+    "Capacity": "10 KVA",
+    "Make": "CUMMINS",
+    "Model": "C10D5P",
+    "ResourceDescription": "OIL FILTER",
+    "ResourceCode": 14002665,
+    "PARTNO": 16098,
+    "BinLocation": "CONTAINER-3",
+    "RackNo": "A3-0027"
+  },
+  {
+    "FleetDesc": "POWER GENERATOR",
+    "Capacity": "10 KVA",
+    "Make": "CUMMINS",
+    "Model": "C10D5P",
+    "ResourceDescription": "FUEL WATER SEPARATOR",
+    "ResourceCode": 14002666,
+    "PARTNO": 19641,
+    "BinLocation": "CONTAINER-3",
+    "RackNo": "A3-0028"
+  },
+  {
+    "FleetDesc": "POWER GENERATOR",
+    "Capacity": "10 KVA",
+    "Make": "CUMMINS",
+    "Model": "C10D5P",
+    "ResourceDescription": "AIR FILTER",
+    "ResourceCode": 14002667,
+    "PARTNO": 25904,
+    "BinLocation": "CONTAINER-3",
+    "RackNo": "A3-0026"
+  },
+  {
+    "FleetDesc": "POWER GENERATOR",
+    "Capacity": "100 KVA",
+    "Make": "CUMMINS",
+    "Model": "CD110D5",
+    "ResourceDescription": "OIL FILTER",
+    "ResourceCode": 14014886,
+    "PARTNO": 278618139902,
+    "BinLocation": "CONTAINER-6",
+    "RackNo": "C-0002"
+  },
+  {
+    "FleetDesc": "POWER GENERATOR",
+    "Capacity": "100 KVA",
+    "Make": "CUMMINS",
+    "Model": "CD110D5",
+    "ResourceDescription": "FUEL FILTER",
+    "ResourceCode": 14000327,
+    "PARTNO": "FF5018",
+    "BinLocation": "PORTABLE-1",
+    "RackNo": "A-0001"
+  },
+  {
+    "FleetDesc": "POWER GENERATOR",
+    "Capacity": "100 KVA",
+    "Make": "CUMMINS",
+    "Model": "CD110D5",
+    "ResourceDescription": "FUEL WATER SEPARATOR",
+    "ResourceCode": 14000662,
+    "PARTNO": "P551329",
+    "BinLocation": "PORTABLE-1",
+    "RackNo": "A16-0357"
+  },
+  {
+    "FleetDesc": "POWER GENERATOR",
+    "Capacity": "100 KVA",
+    "Make": "CUMMINS",
+    "Model": "CD110D5",
+    "ResourceDescription": "AIR FILTER 1",
+    "ResourceCode": 14014429,
+    "PARTNO": 25910,
+    "BinLocation": "CONTAINER-4",
+    "RackNo": "A1 DWN-0081"
+  },
+  {
+    "FleetDesc": "POWER GENERATOR",
+    "Capacity": "100 KVA",
+    "Make": "CUMMINS",
+    "Model": "CD110D5",
+    "ResourceDescription": "AIR FILTER 2",
+    "ResourceCode": 14014530,
+    "PARTNO": 25911,
+    "BinLocation": "CONTAINER-4",
+    "RackNo": "A1 DWN-0082"
+  },
+  {
+    "FleetDesc": "POWER GENERATOR",
+    "Capacity": "110 KVA",
+    "Make": "CUMMINS",
+    "Model": "C110D5",
+    "ResourceDescription": "OIL FILTER",
+    "ResourceCode": 14014886,
+    "PARTNO": 278618139902,
+    "BinLocation": "CONTAINER-6",
+    "RackNo": "C-0002"
+  },
+  {
+    "FleetDesc": "POWER GENERATOR",
+    "Capacity": "110 KVA",
+    "Make": "CUMMINS",
+    "Model": "C110D5",
+    "ResourceDescription": "FUEL FILTER",
+    "ResourceCode": 14000327,
+    "PARTNO": "FF5018",
+    "BinLocation": "PORTABLE-1",
+    "RackNo": "A-0001"
+  },
+  {
+    "FleetDesc": "POWER GENERATOR",
+    "Capacity": "110 KVA",
+    "Make": "CUMMINS",
+    "Model": "C110D5",
+    "ResourceDescription": "FUEL WATER SEPARATOR",
+    "ResourceCode": 14000662,
+    "PARTNO": "P551329",
+    "BinLocation": "PORTABLE-1",
+    "RackNo": "A16-0357"
+  },
+  {
+    "FleetDesc": "POWER GENERATOR",
+    "Capacity": "110 KVA",
+    "Make": "CUMMINS",
+    "Model": "C110D5",
+    "ResourceDescription": "AIR FILTER 1",
+    "ResourceCode": 14014429,
+    "PARTNO": 25910,
+    "BinLocation": "CONTAINER-4",
+    "RackNo": "A1 DWN-0081"
+  },
+  {
+    "FleetDesc": "POWER GENERATOR",
+    "Capacity": "110 KVA",
+    "Make": "CUMMINS",
+    "Model": "C110D5",
+    "ResourceDescription": "AIR FILTER 2",
+    "ResourceCode": 14014530,
+    "PARTNO": 25911,
+    "BinLocation": "CONTAINER-4",
+    "RackNo": "A1 DWN-0082"
+  },
+  {
+    "FleetDesc": "POWER GENERATOR",
+    "Capacity": "80 KVA",
+    "Make": "AGG POWER SOLUTIONS",
+    "Model": "C165D5G",
+    "ResourceDescription": "OIL FILTER",
+    "ResourceCode": 14014886,
+    "PARTNO": 278618139902,
+    "BinLocation": "CONTAINER-6",
+    "RackNo": "C-0002"
+  },
+  {
+    "FleetDesc": "POWER GENERATOR",
+    "Capacity": "80 KVA",
+    "Make": "AGG POWER SOLUTIONS",
+    "Model": "C165D5G",
+    "ResourceDescription": "FUEL FILTER",
+    "ResourceCode": 14000327,
+    "PARTNO": "FF5018",
+    "BinLocation": "PORTABLE--1",
+    "RackNo": "A-0001"
+  },
+  {
+    "FleetDesc": "POWER GENERATOR",
+    "Capacity": "80 KVA",
+    "Make": "AGG POWER SOLUTIONS",
+    "Model": "C165D5G",
+    "ResourceDescription": "FUEL WATER SEPARATOR",
+    "ResourceCode": 14000662,
+    "PARTNO": "P551329",
+    "BinLocation": "PORTABLE-1",
+    "RackNo": "A16-0357"
+  },
+  {
+    "FleetDesc": "POWER GENERATOR",
+    "Capacity": "150 KVA",
+    "Make": "AGG POWER SOLUTIONS",
+    "Model": "C165D5G",
+    "EngineMakeModel": "CUMMINS 6BTAA5.9G12 ",
+    "ResourceDescription": "OIL FILTER",
+    "ResourceCode": 14014886,
+    "PARTNO": 278618139902,
+    "BinLocation": "CONTAINER-6",
+    "RackNo": "C-0002"
+  },
+  {
+    "FleetDesc": "POWER GENERATOR",
+    "Capacity": "150 KVA",
+    "Make": "AGG POWER SOLUTIONS",
+    "Model": "C165D5G",
+    "EngineMakeModel": "CUMMINS 6BTAA5.9G12 ",
+    "ResourceDescription": "FUEL FILTER",
+    "ResourceCode": 14000327,
+    "PARTNO": "FF5018",
+    "BinLocation": "PORTABLE--1",
+    "RackNo": "A-0001"
+  },
+  {
+    "FleetDesc": "POWER GENERATOR",
+    "Capacity": "150 KVA",
+    "Make": "AGG POWER SOLUTIONS",
+    "Model": "C165D5G",
+    "EngineMakeModel": "CUMMINS 6BTAA5.9G12 ",
+    "ResourceDescription": "FUEL WATER SEPARATOR",
+    "ResourceCode": 14000662,
+    "PARTNO": "P551329",
+    "BinLocation": "PORTABLE-1",
+    "RackNo": "A16-0357"
+  },
+  {
+    "FleetDesc": "POWER GENERATOR",
+    "Capacity": "10 KVA",
+    "Make": "AGG POWER SOLUTIONS",
+    "Model": "AY11D5",
+    "ResourceDescription": "OIL FILTER",
+    "ResourceCode": 14002485,
+    "PARTNO": "JX0810",
+    "BinLocation": "CONTAINER-3",
+    "RackNo": "A7-0068"
+  },
+  {
+    "FleetDesc": "POWER GENERATOR",
+    "Capacity": "10 KVA",
+    "Make": "AGG POWER SOLUTIONS",
+    "Model": "AY11D5",
+    "ResourceDescription": "FUEL FILTER",
+    "ResourceCode": 14002486,
+    "PARTNO": "COSO6C-0691E",
+    "BinLocation": "CONTAINER-3",
+    "RackNo": "A7-0069"
+  },
+  {
+    "FleetDesc": "POWER GENERATOR",
+    "Capacity": "10 KVA",
+    "Make": "AGG POWER SOLUTIONS",
+    "Model": "AY11D5",
+    "ResourceDescription": "FUEL WATER SEPARATOR",
+    "ResourceCode": 14002487,
+    "PARTNO": "R12T",
+    "RackNo": "A7-0071"
+  },
+  {
+    "FleetDesc": "POWER GENERATOR",
+    "Capacity": "10 KVA",
+    "Make": "AGG POWER SOLUTIONS",
+    "Model": "AY11D5",
+    "ResourceDescription": "AIR FILTER 1",
+    "ResourceCode": 14002488,
+    "PARTNO": "KG1900",
+    "RackNo": "A7-0067"
+  },
+  {
+    "FleetDesc": "POWER GENERATOR",
+    "Capacity": "10 KVA",
+    "Make": "AGG POWER SOLUTIONS",
+    "Model": "AY11D5",
+    "ResourceDescription": "AIR FILTER 2",
+    "ResourceCode": 14002489,
+    "PARTNO": "188FV-07100",
+    "RackNo": "A7-0070"
+  },
+  {
+    "FleetDesc": "TOWER LIGHT",
+    "Capacity": "3.3 KVA",
+    "Make": "ATLAS COPCO",
+    "Model": "CPLT V15 LED",
+    "ResourceDescription": "OIL FILTER",
+    "ResourceCode": 14017445,
+    "PARTNO": 1094190026,
+    "BinLocation": "CONTAINER-2",
+    "RackNo": "C2-0108",
+    "REMARKS": "CPL"
+  },
+  {
+    "FleetDesc": "TOWER LIGHT",
+    "Capacity": "3.3 KVA",
+    "Make": "ATLAS COPCO",
+    "Model": "CPLT V15 LED",
+    "ResourceDescription": "FUEL FILTER",
+    "ResourceCode": 14015927,
+    "PARTNO": 1092100790,
+    "BinLocation": "PORTABLE-1",
+    "RackNo": "A18-0256",
+    "REMARKS": "CPL"
+  },
+  {
+    "FleetDesc": "TOWER LIGHT",
+    "Capacity": "3.3 KVA",
+    "Make": "ATLAS COPCO",
+    "Model": "CPLT V15 LED",
+    "ResourceDescription": "AIR FILTER 1",
+    "ResourceCode": 14021895,
+    "PARTNO": 1094735403,
+    "BinLocation": "CONTAINER-2",
+    "RackNo": "C2-0092",
+    "REMARKS": "CPL"
+  },
+  {
+    "FleetDesc": "TOWER LIGHT",
+    "Capacity": "3.3 KVA",
+    "Make": "ATLAS COPCO",
+    "Model": "CPLT V15 LED",
+    "ResourceDescription": "AIR FILTER 2",
+    "ResourceCode": 14021896,
+    "PARTNO": 1094735401,
+    "BinLocation": "CONTAINER-2",
+    "RackNo": "C2-0090",
+    "REMARKS": "CPL"
+  },
+  {
+    "FleetDesc": "TOWER LIGHT",
+    "Capacity": "3.3 KVA",
+    "Make": "ATLAS COPCO",
+    "Model": "CPLT V15 LED",
+    "ResourceDescription": "FUEL STRAINER FILTER",
+    "ResourceCode": 14017446,
+    "PARTNO": 1636301066,
+    "BinLocation": "CONTAINER-2",
+    "RackNo": "C2-0109",
+    "REMARKS": "CPL"
+  },
+  {
+    "FleetDesc": "TOWER LIGHT",
+    "Capacity": "5 - 7.5 KVA",
+    "Make": "ATLAS COPCO",
+    "Model": "QLT M10",
+    "ResourceDescription": "OIL FILTER",
+    "ResourceCode": 14017445,
+    "PARTNO": 1094190026,
+    "BinLocation": "CONTAINER-2",
+    "RackNo": "C2-0108",
+    "REMARKS": "NEW MODEL"
+  },
+  {
+    "FleetDesc": "TOWER LIGHT",
+    "Capacity": "5 - 7.5 KVA",
+    "Make": "ATLAS COPCO",
+    "Model": "QLT M10",
+    "ResourceDescription": "FUEL FILTER",
+    "ResourceCode": 14015927,
+    "PARTNO": 1092100790,
+    "BinLocation": "PORTABLE-1",
+    "RackNo": "A18-0256",
+    "REMARKS": "NEW MODEL"
+  },
+  {
+    "FleetDesc": "TOWER LIGHT",
+    "Capacity": "5 - 7.5 KVA",
+    "Make": "ATLAS COPCO",
+    "Model": "QLT M10",
+    "ResourceDescription": "AIR FILTER 1",
+    "ResourceCode": 14021895,
+    "PARTNO": 1094735403,
+    "BinLocation": "CONTAINER-2",
+    "RackNo": "C2-0092",
+    "REMARKS": "NEW MODEL"
+  },
+  {
+    "FleetDesc": "TOWER LIGHT",
+    "Capacity": "5 - 7.5 KVA",
+    "Make": "ATLAS COPCO",
+    "Model": "QLT M10",
+    "ResourceDescription": "AIR FILTER 2",
+    "ResourceCode": 14021896,
+    "PARTNO": 1094735401,
+    "BinLocation": "CONTAINER-2",
+    "RackNo": "C2-0090",
+    "REMARKS": "NEW MODEL"
+  },
+  {
+    "FleetDesc": "TOWER LIGHT",
+    "Capacity": "6 KVA",
+    "Make": "ATLAS COPCO",
+    "Model": "HILIGHT - V4 PLUS",
+    "ResourceDescription": "OIL FILTER",
+    "ResourceCode": 14003901,
+    "PARTNO": 2913311200,
+    "BinLocation": "CONTAINER-2",
+    "RackNo": "B2-0011",
+    "REMARKS": "OLD MODEL"
+  },
+  {
+    "FleetDesc": "TOWER LIGHT",
+    "Capacity": "6 KVA",
+    "Make": "ATLAS COPCO",
+    "Model": "HILIGHT - V4 PLUS",
+    "ResourceDescription": "FUEL FILTER",
+    "ResourceCode": 14003902,
+    "PARTNO": "1092-6387-00",
+    "BinLocation": "CONTAINER-2",
+    "RackNo": "B2-0091",
+    "REMARKS": "OLD MODEL"
+  },
+  {
+    "FleetDesc": "TOWER LIGHT",
+    "Capacity": "6 KVA",
+    "Make": "ATLAS COPCO",
+    "Model": "HILIGHT - V4 PLUS",
+    "ResourceDescription": "AIR FILTER-1",
+    "ResourceCode": 14000117,
+    "PARTNO": 2914930000,
+    "BinLocation": "CONTAINER-2",
+    "RackNo": "B1-0018",
+    "REMARKS": "OLD MODEL"
+  },
+  {
+    "FleetDesc": "TOWER LIGHT",
+    "Capacity": "6 KVA",
+    "Make": "ATLAS COPCO",
+    "Model": "HILIGHT - V4 PLUS",
+    "ResourceDescription": "AIR FILTER-2",
+    "ResourceCode": 14003785,
+    "PARTNO": 2914930100,
+    "BinLocation": "CONTAINER-2",
+    "RackNo": "B1-0013",
+    "REMARKS": "OLD MODEL"
+  },
+  {
+    "FleetDesc": "TOWER LIGHT",
+    "Capacity": "6 KVA",
+    "Make": "ATLAS COPCO",
+    "Model": "HILIGHT - V4 PLUS",
+    "ResourceDescription": "V BELT",
+    "ResourceCode": 14000860,
+    "PARTNO": "2914-8667-00",
+    "BinLocation": "CONTAINER-2",
+    "RackNo": "B1-0012",
+    "REMARKS": "OLD MODEL"
+  },
+  {
+    "FleetDesc": "TOWER LIGHT",
+    "Capacity": "6 KVA",
+    "Make": "ATLAS COPCO",
+    "Model": "HILIGHT - V4 PLUS",
+    "ResourceDescription": "RADIATOR CAP",
+    "ResourceCode": 14003930,
+    "PARTNO": 1094190003,
+    "BinLocation": "CONTAINER-2",
+    "RackNo": "B1-0014",
+    "REMARKS": "OLD MODEL"
+  },
+  {
+    "FleetDesc": "TOWER LIGHT",
+    "Capacity": "6 KVA",
+    "Make": "ATLAS COPCO",
+    "Model": "HILIGHT - V4 PLUS",
+    "ResourceDescription": "RADIATOR HOSE LOWER",
+    "ResourceCode": 14000861,
+    "PARTNO": "1092-6377-00",
+    "BinLocation": "CONTAINER-2",
+    "RackNo": "B1-0016",
+    "REMARKS": "OLD MODEL"
+  },
+  {
+    "FleetDesc": "TOWER LIGHT",
+    "Capacity": "6 KVA",
+    "Make": "ATLAS COPCO",
+    "Model": "HILIGHT - V4 PLUS",
+    "ResourceDescription": "RADIATOR HOSE UPPER",
+    "ResourceCode": 14000862,
+    "PARTNO": "1092-6257-00",
+    "BinLocation": "CONTAINER-2",
+    "RackNo": "B1-0015",
+    "REMARKS": "OLD MODEL"
+  },
+  {
+    "FleetDesc": "TOWER LIGHT",
+    "Capacity": "6 KVA",
+    "Make": "ATLAS COPCO",
+    "Model": "HILIGHT - V4 PLUS",
+    "ResourceDescription": "STARTER",
+    "ResourceCode": 14019927,
+    "PARTNO": "2913-3167-00",
+    "BinLocation": "CONTAINER-2",
+    "RackNo": "F1-0141",
+    "REMARKS": "OLD MODEL"
+  },
+  {
+    "FleetDesc": "TOWER LIGHT",
+    "Capacity": "6 KVA",
+    "Make": "ATLAS COPCO",
+    "Model": "HILIGHT - V4 PLUS",
+    "ResourceDescription": "ALTERNATOR  ",
+    "ResourceCode": 14019928,
+    "PARTNO": "1636-3004-03",
+    "BinLocation": "CONTAINER-2",
+    "RackNo": "B1-0036",
+    "REMARKS": "OLD MODEL"
+  },
+  {
+    "FleetDesc": "TOWER LIGHT",
+    "Capacity": "6 KVA",
+    "Make": "ATLAS COPCO",
+    "Model": "HILIGHT - V4 PLUS",
+    "ResourceDescription": "WATER PUMP",
+    "ResourceCode": 14019932,
+    "PARTNO": "2913-3052-00",
+    "BinLocation": "CONTAINER-2",
+    "RackNo": "B1-0037",
+    "REMARKS": "OLD MODEL"
+  },
+  {
+    "FleetDesc": "TOWER LIGHT",
+    "Capacity": "8 KVA",
+    "Make": "WACKER NEUSON",
+    "Model": "LTN6L",
+    "ResourceDescription": "OIL FILTER",
+    "ResourceCode": 14001126,
+    "PARTNO": "LF17508",
+    "BinLocation": "CONTAINER-2",
+    "RackNo": "C1-0033",
+    "REMARKS": "OLD MODEL"
+  },
+  {
+    "FleetDesc": "TOWER LIGHT",
+    "Capacity": "8 KVA",
+    "Make": "WACKER NEUSON",
+    "Model": "LTN6L",
+    "ResourceDescription": "FUEL FILTER",
+    "ResourceCode": 14001124,
+    "PARTNO": "FF5040",
+    "BinLocation": "CONTAINER-2",
+    "RackNo": "C1-0034",
+    "REMARKS": "OLD MODEL"
+  },
+  {
+    "FleetDesc": "TOWER LIGHT",
+    "Capacity": "8 KVA",
+    "Make": "WACKER NEUSON",
+    "Model": "LTN6L",
+    "ResourceDescription": "AIR FILTER",
+    "ResourceCode": 14003896,
+    "PARTNO": "P622148",
+    "BinLocation": "CONTAINER-2",
+    "RackNo": "C1-0032",
+    "REMARKS": "OLD MODEL"
+  },
+  {
+    "FleetDesc": "TOWER LIGHT",
+    "Capacity": "3.5 KVA",
+    "Make": "WACKER NEUSON",
+    "Model": "LTS4K",
+    "ResourceDescription": "OIL FILTER",
+    "ResourceCode": 14014513,
+    "PARTNO": 1000003052,
+    "BinLocation": "CONTAINER-3",
+    "RackNo": "A5-0035",
+    "REMARKS": "NEW MODEL"
+  },
+  {
+    "FleetDesc": "TOWER LIGHT",
+    "Capacity": "3.5 KVA",
+    "Make": "WACKER NEUSON",
+    "Model": "LTS4K",
+    "ResourceDescription": "FUEL FILTER",
+    "ResourceCode": 14014514,
+    "PARTNO": 1000004614,
+    "BinLocation": "CONTAINER-3",
+    "RackNo": "A5-0036",
+    "REMARKS": "NEW MODEL"
+  },
+  {
+    "FleetDesc": "TOWER LIGHT",
+    "Capacity": "3.5 KVA",
+    "Make": "WACKER NEUSON",
+    "Model": "LTS4K",
+    "ResourceDescription": "FUEL WATER SEPARATOR",
+    "ResourceCode": 14014515,
+    "BinLocation": "CONTAINER-3",
+    "RackNo": "A5-0043",
+    "REMARKS": "NEW MODEL"
+  },
+  {
+    "FleetDesc": "TOWER LIGHT",
+    "Capacity": "3.5 KVA",
+    "Make": "WACKER NEUSON",
+    "Model": "LTS4K",
+    "ResourceDescription": "AIR FILTER",
+    "ResourceCode": 14014516,
+    "BinLocation": "CONTAINER-3",
+    "RackNo": "A5-0037",
+    "REMARKS": "NEW MODEL"
+  },
+  {
+    "FleetDesc": "TOWER LIGHT",
+    "Capacity": "3.5 KVA",
+    "Make": "WACKER NEUSON",
+    "Model": "LTS4K",
+    "ResourceDescription": "V BELT",
+    "ResourceCode": 14014517,
+    "BinLocation": "CONTAINER-3",
+    "RackNo": "A5-0044",
+    "REMARKS": "NEW MODEL"
+  },
+  {
+    "FleetDesc": "WELDING GENERATOR",
+    "Capacity": "400 - 500 AMPS",
+    "Make": "LINCON",
+    "Model": "VANTAGE-500-I",
+    "ResourceDescription": "OIL FILTER",
+    "ResourceCode": 14003898,
+    "PARTNO": "LF3335",
+    "BinLocation": "CONTAINER-2",
+    "RackNo": "C DWN -0023",
+    "REMARKS": "OLD MODEL"
+  },
+  {
+    "FleetDesc": "WELDING GENERATOR",
+    "Capacity": "400 - 500 AMPS",
+    "Make": "LINCON",
+    "Model": "VANTAGE-500-I",
+    "ResourceDescription": "FUEL FILTER",
+    "ResourceCode": 14003899,
+    "PARTNO": "FF5114",
+    "BinLocation": "CONTAINER-2",
+    "RackNo": "C DWN -0093",
+    "REMARKS": "OLD MODEL"
+  },
+  {
+    "FleetDesc": "WELDING GENERATOR",
+    "Capacity": "400 - 500 AMPS",
+    "Make": "LINCON",
+    "Model": "VANTAGE-500-I",
+    "ResourceDescription": "AIR FILTER",
+    "ResourceCode": 14003900,
+    "PARTNO": "146-7472",
+    "BinLocation": "CONTAINER-2",
+    "RackNo": "C DWN-0022",
+    "REMARKS": "OLD MODEL"
+  },
+  {
+    "FleetDesc": "WELDING GENERATOR",
+    "Capacity": "400 - 500 AMPS",
+    "Make": "LINCON",
+    "Model": "VANTAGE-500-I",
+    "ResourceDescription": "V BELT-AX38",
+    "ResourceCode": 14017453,
+    "BinLocation": "PORTABLE-3",
+    "RackNo": "G2-0064",
+    "REMARKS": "OLD MODEL"
+  },
+  {
+    "FleetDesc": "WELDING GENERATOR",
+    "Capacity": "400 - 500 AMPS",
+    "Make": "LINCON",
+    "Model": "VANTAGE-500-I",
+    "ResourceDescription": "FUEL STRAINER FILTER",
+    "ResourceCode": 14007790,
+    "PARTNO": "FF5104",
+    "BinLocation": "CONTAINER-3",
+    "RackNo": "H6-0084",
+    "REMARKS": "OLD MODEL"
+  },
+  {
+    "FleetDesc": "WELDING GENERATOR",
+    "Capacity": "400 - 500 AMPS",
+    "Make": "MILLER",
+    "Model": "BIG BLUE 500X",
+    "ResourceDescription": "OIL FILTER",
+    "ResourceCode": 14003898,
+    "PARTNO": "LF3335",
+    "BinLocation": "CONTAINER-2",
+    "RackNo": "C DWN-0023",
+    "REMARKS": "OLD MODEL"
+  },
+  {
+    "FleetDesc": "WELDING GENERATOR",
+    "Capacity": "400 - 500 AMPS",
+    "Make": "MILLER",
+    "Model": "BIG BLUE 500X",
+    "ResourceDescription": "FUEL FILTER",
+    "ResourceCode": 14000327,
+    "PARTNO": "FF5018",
+    "BinLocation": "PORTABLE-1",
+    "RackNo": "A-0001",
+    "REMARKS": "OLD MODEL"
+  },
+  {
+    "FleetDesc": "WELDING GENERATOR",
+    "Capacity": "400 - 500 AMPS",
+    "Make": "MILLER",
+    "Model": "BIG BLUE 500X",
+    "ResourceDescription": "AIR FILTER",
+    "ResourceCode": 14000084,
+    "PARTNO": "P822768",
+    "BinLocation": "CONTAINER-2",
+    "RackNo": "C DWN-0021",
+    "REMARKS": "OLD MODEL"
+  },
+  {
+    "FleetDesc": "WELDING GENERATOR",
+    "Capacity": "400 - 500 AMPS",
+    "Make": "MILLER",
+    "Model": "BIG BLUE 500X",
+    "ResourceDescription": "V BELT FMX46",
+    "ResourceCode": 14004025,
+    "PARTNO": "FMX46",
+    "BinLocation": "PORTABLE-3",
+    "RackNo": "G2-0065",
+    "REMARKS": "OLD MODEL"
+  },
+  {
+    "FleetDesc": "WELDING GENERATOR",
+    "Capacity": "400 - 500 AMPS",
+    "Make": "LINCON",
+    "Model": "DUAL MAVERICK 450",
+    "ResourceDescription": "OIL FILTER",
+    "ResourceCode": 14000459,
+    "PARTNO": 140517050,
+    "BinLocation": "PORTABLE-2",
+    "RackNo": "A1-0006",
+    "REMARKS": "NEW MODEL"
+  },
+  {
+    "FleetDesc": "WELDING GENERATOR",
+    "Capacity": "400 - 500 AMPS",
+    "Make": "LINCON",
+    "Model": "DUAL MAVERICK 450",
+    "ResourceDescription": "FUEL FILTER",
+    "ResourceCode": 14001125,
+    "PARTNO": 130366120,
+    "BinLocation": "CONTAINER-2",
+    "RackNo": "A2-0116",
+    "REMARKS": "NEW MODEL"
+  },
+  {
+    "FleetDesc": "WELDING GENERATOR",
+    "Capacity": "400 - 500 AMPS",
+    "Make": "LINCON",
+    "Model": "DUAL MAVERICK 450",
+    "ResourceDescription": "AIR FILTER",
+    "ResourceCode": 14014169,
+    "PARTNO": 5543091,
+    "BinLocation": "PORTABLE-2",
+    "RackNo": "A1-0005",
+    "REMARKS": "NEW MODEL"
+  },
+  {
+    "FleetDesc": "TELEHANDLER",
+    "Capacity": "5.4 MT",
+    "Make": "SANY",
+    "Model": "STH1256A",
+    "ResourceDescription": "OIL FILTER",
+    "ResourceCode": 14002684,
+    "PARTNO": "LF16015",
+    "BinLocation": "PORTABLE-2",
+    "RackNo": "A2-0009"
+  },
+  {
+    "FleetDesc": "TELEHANDLER",
+    "Capacity": "5.4 MT",
+    "Make": "SANY",
+    "Model": "STH1256A",
+    "ResourceDescription": "FUEL FILTER",
+    "ResourceCode": 14018982,
+    "PARTNO": "FF5706",
+    "BinLocation": "PORTABLE-2",
+    "RackNo": "A2-0020"
+  },
+  {
+    "FleetDesc": "TELEHANDLER",
+    "Capacity": "5.4 MT",
+    "Make": "SANY",
+    "Model": "STH1256A",
+    "ResourceDescription": "FUEL WATER SEPARATOR",
+    "ResourceCode": 14003765,
+    "PARTNO": 5319680,
+    "BinLocation": "PORTABLE-2",
+    "RackNo": "A2-0008"
+  },
+  {
+    "FleetDesc": "TELEHANDLER",
+    "Capacity": "5.4 MT",
+    "Make": "SANY",
+    "Model": "STH1256A",
+    "ResourceDescription": "AIR FILTER 1",
+    "ResourceCode": 14003767,
+    "PARTNO": "C20500",
+    "BinLocation": "PORTABLE-2",
+    "RackNo": "A3-0015"
+  },
+  {
+    "FleetDesc": "TELEHANDLER",
+    "Capacity": "5.4 MT",
+    "Make": "SANY",
+    "Model": "STH1256A",
+    "ResourceDescription": "AIR FILTER 2",
+    "ResourceCode": 14003768,
+    "PARTNO": "CF500",
+    "BinLocation": "PORTABLE-2",
+    "RackNo": "A3-0016"
+  },
+  {
+    "FleetDesc": "TELEHANDLER",
+    "Capacity": "5.4 MT",
+    "Make": "SANY",
+    "Model": "STH1256A",
+    "ResourceDescription": "TRANSMISSION OIL STRAINER",
+    "ResourceCode": 14014155,
+    "PARTNO": "SY130288000342A",
+    "BinLocation": "PORTABLE-2",
+    "RackNo": "A2-0019"
+  },
+  {
+    "FleetDesc": "TELEHANDLER",
+    "Capacity": "5.4 MT",
+    "Make": "SANY",
+    "Model": "STH1256A",
+    "ResourceDescription": "HYDRAULIC OIL FILTER",
+    "ResourceCode": 14014146,
+    "PARTNO": "SY60072195",
+    "BinLocation": "PORTABLE-2",
+    "RackNo": "A3-0017"
+  },
+  {
+    "FleetDesc": "TELEHANDLER",
+    "Capacity": "5.4 MT",
+    "Make": "SANY",
+    "Model": "STH1256A",
+    "ResourceDescription": "BREATHER HYD TANK",
+    "ResourceCode": 14014152,
+    "PARTNO": "SYA222100000044",
+    "BinLocation": "PORTABLE-2",
+    "RackNo": "A2-0011"
+  },
+  {
+    "FleetDesc": "TELEHANDLER",
+    "Capacity": "5.4 MT",
+    "Make": "SANY",
+    "Model": "STH1256A",
+    "ResourceDescription": "O RING FOR HYD FILTER",
+    "ResourceCode": 14014153,
+    "PARTNO": "SYA210609000010",
+    "BinLocation": "PORTABLE-2",
+    "RackNo": "A2-0014"
+  },
+  {
+    "FleetDesc": "TELEHANDLER",
+    "Capacity": "5.4 MT",
+    "Make": "SANY",
+    "Model": "STH1256A",
+    "ResourceDescription": "V BELT",
+    "ResourceCode": 14014156,
+    "PARTNO": "SY160899000040A",
+    "BinLocation": "PORTABLE-2",
+    "RackNo": "A2-0012"
+  },
+  {
+    "FleetDesc": "TELEHANDLER",
+    "Capacity": "5.4 MT",
+    "Make": "SANY",
+    "Model": "STH1256A",
+    "ResourceDescription": "CABIN AC FILTER",
+    "ResourceCode": 14014147,
+    "PARTNO": "SY60250669",
+    "BinLocation": "PORTABLE-2",
+    "RackNo": "A2-0013"
+  },
+  {
+    "FleetDesc": "TELEHANDLER",
+    "Capacity": "5.4 MT",
+    "Make": "SANY",
+    "Model": "STH1256A",
+    "ResourceDescription": "COVER ASSEMBLY",
+    "ResourceCode": 14000989,
+    "PARTNO": "246-4614",
+    "BinLocation": "PORTABLE-2",
+    "RackNo": "A3-0018"
+  },
+  {
+    "FleetDesc": "TELEHANDLER",
+    "Capacity": "5.4 MT",
+    "Make": "SANY",
+    "Model": "STH1256A",
+    "ResourceDescription": "BLOWER MOTOR",
+    "ResourceCode": 14020979,
+    "PARTNO": 60088088,
+    "BinLocation": "PORTABLE-2",
+    "RackNo": "A2-0227"
+  },
+  {
+    "FleetDesc": "TELEHANDLER",
+    "Capacity": "5.4 MT",
+    "Make": "SANY",
+    "Model": "STH1256A",
+    "ResourceDescription": "EVAPORATOR",
+    "ResourceCode": 14020981,
+    "PARTNO": 60088105,
+    "BinLocation": "PORTABLE-2",
+    "RackNo": "A2-0228"
+  },
+  {
+    "FleetDesc": "TELEHANDLER",
+    "Capacity": "5.4 MT",
+    "Make": "SANY",
+    "Model": "STH1256A",
+    "ResourceDescription": "EXPANSION VALVE",
+    "ResourceCode": 14020982,
+    "PARTNO": 60123238,
+    "BinLocation": "PORTABLE-2",
+    "RackNo": "A2-0229"
+  },
+  {
+    "FleetDesc": "TELEHANDLER",
+    "Capacity": "5.4 MT",
+    "Make": "SANY",
+    "Model": "STH1256A",
+    "ResourceDescription": "COMPRESSOR",
+    "ResourceCode": 14020983,
+    "PARTNO": 60031711,
+    "BinLocation": "PORTABLE-2",
+    "RackNo": "A2-0230"
+  },
+  {
+    "FleetDesc": "TELEHANDLER",
+    "Capacity": "5.4 MT",
+    "Make": "SANY",
+    "Model": "STH1256A",
+    "ResourceDescription": "AC AIR FILTER",
+    "ResourceCode": 14020980,
+    "BinLocation": "PORTABLE-2",
+    "RackNo": "A2-252"
+  },
+  {
+    "FleetDesc": "TELEHANDLER",
+    "Capacity": "5.4 MT",
+    "Make": "SANY",
+    "Model": "STH1256A",
+    "ResourceDescription": "TRANSMISSION FILTER",
+    "ResourceCode": 14003766,
+    "PARTNO": 4209211,
+    "BinLocation": "PORTABLE-2",
+    "RackNo": "A2-0010"
+  },
+  {
+    "FleetDesc": "WHEEL LOADER",
+    "Capacity": "3 - 4 CUM",
+    "Make": "CATERPILLER",
+    "Model": "950 H",
+    "EngineMakeModel": "CATERPILLAR C 7 ACERT",
+    "ResourceDescription": "OIL FILTER",
+    "ResourceCode": 14000673,
+    "PARTNO": "1R-1807",
+    "BinLocation": "PORTABLE-1",
+    "RackNo": "B-0201",
+    "REMARKS": "OLD MODEL"
+  },
+  {
+    "FleetDesc": "WHEEL LOADER",
+    "Capacity": "3 - 4 CUM",
+    "Make": "CATERPILLER",
+    "Model": "950 H",
+    "EngineMakeModel": "CATERPILLAR C 7 ACERT",
+    "ResourceDescription": "FUEL FILTER",
+    "ResourceCode": 14009547,
+    "PARTNO": "1R-0762",
+    "BinLocation": "PORTABLE-1",
+    "RackNo": "B1-0039",
+    "REMARKS": "OLD MODEL"
+  },
+  {
+    "FleetDesc": "WHEEL LOADER",
+    "Capacity": "3 - 4 CUM",
+    "Make": "CATERPILLER",
+    "Model": "950 H",
+    "EngineMakeModel": "CATERPILLAR C 7 ACERT",
+    "ResourceDescription": "FUEL WATER SEPARATOR",
+    "ResourceCode": 14000367,
+    "PARTNO": "326-1644",
+    "BinLocation": "PORTABLE-1",
+    "RackNo": "B-0308",
+    "REMARKS": "OLD MODEL"
+  },
+  {
+    "FleetDesc": "WHEEL LOADER",
+    "Capacity": "3 - 4 CUM",
+    "Make": "CATERPILLER",
+    "Model": "950 H",
+    "EngineMakeModel": "CATERPILLAR C 7 ACERT",
+    "ResourceDescription": "AIR FILTER-1",
+    "ResourceCode": 14000676,
+    "PARTNO": "245-6375",
+    "BinLocation": "PORTABLE-1",
+    "RackNo": "B5-0229",
+    "REMARKS": "OLD MODEL"
+  },
+  {
+    "FleetDesc": "WHEEL LOADER",
+    "Capacity": "3 - 4 CUM",
+    "Make": "CATERPILLER",
+    "Model": "950 H",
+    "EngineMakeModel": "CATERPILLAR C 7 ACERT",
+    "ResourceDescription": "AIR FILTER-2",
+    "ResourceCode": 14000677,
+    "PARTNO": "245-6376",
+    "BinLocation": "PORTABLE-1",
+    "RackNo": "B5-0228",
+    "REMARKS": "OLD MODEL"
+  },
+  {
+    "FleetDesc": "WHEEL LOADER",
+    "Capacity": "3 - 4 CUM",
+    "Make": "CATERPILLER",
+    "Model": "950 H",
+    "EngineMakeModel": "CATERPILLAR C 7 ACERT",
+    "ResourceDescription": "HYDRAULIC FILTER 1",
+    "ResourceCode": 14000679,
+    "PARTNO": "465-6506",
+    "BinLocation": "PORTABLE-1",
+    "RackNo": "B8-0237",
+    "REMARKS": "OLD MODEL"
+  },
+  {
+    "FleetDesc": "WHEEL LOADER",
+    "Capacity": "3 - 4 CUM",
+    "Make": "CATERPILLER",
+    "Model": "950 H",
+    "EngineMakeModel": "CATERPILLAR C 7 ACERT",
+    "ResourceDescription": "HYDRAULIC FILTER 2",
+    "ResourceCode": 14000994,
+    "PARTNO": 3416643,
+    "BinLocation": "PORTABLE-1",
+    "RackNo": "B8-0239",
+    "REMARKS": "OLD MODEL"
+  },
+  {
+    "FleetDesc": "WHEEL LOADER",
+    "Capacity": "3 - 4 CUM",
+    "Make": "CATERPILLER",
+    "Model": "950 GC",
+    "EngineMakeModel": "CATERPILLAR C 7 ACERT",
+    "ResourceDescription": "OIL FILTER",
+    "ResourceCode": 14003123,
+    "PARTNO": "462-1171",
+    "BinLocation": "PORTABLE-1",
+    "RackNo": "B6-0235",
+    "REMARKS": "NEW MODEL"
+  },
+  {
+    "FleetDesc": "WHEEL LOADER",
+    "Capacity": "3 - 4 CUM",
+    "Make": "CATERPILLER",
+    "Model": "950 GC",
+    "EngineMakeModel": "CATERPILLAR C 7 ACERT",
+    "ResourceDescription": "FUEL FILTER",
+    "ResourceCode": 14003124,
+    "PARTNO": "360-8960",
+    "BinLocation": "PORTABLE-1",
+    "RackNo": "B6-0236",
+    "REMARKS": "NEW MODEL"
+  },
+  {
+    "FleetDesc": "WHEEL LOADER",
+    "Capacity": "3 - 4 CUM",
+    "Make": "CATERPILLER",
+    "Model": "950 GC",
+    "EngineMakeModel": "CATERPILLAR C 7 ACERT",
+    "ResourceDescription": "FUEL WATER SEPARATOR",
+    "ResourceCode": 14009615,
+    "PARTNO": "439-5037",
+    "BinLocation": "PORTABLE-1",
+    "RackNo": "A16-0182",
+    "REMARKS": "NEW MODEL"
+  },
+  {
+    "FleetDesc": "WHEEL LOADER",
+    "Capacity": "3 - 4 CUM",
+    "Make": "CATERPILLER",
+    "Model": "950 GC",
+    "EngineMakeModel": "CATERPILLAR C 7 ACERT",
+    "ResourceDescription": "AIR FILTER 1",
+    "ResourceCode": 14000676,
+    "PARTNO": "245-6375",
+    "BinLocation": "PORTABLE-1",
+    "RackNo": "B5-0229",
+    "REMARKS": "NEW MODEL"
+  },
+  {
+    "FleetDesc": "WHEEL LOADER",
+    "Capacity": "3 - 4 CUM",
+    "Make": "CATERPILLER",
+    "Model": "950 GC",
+    "EngineMakeModel": "CATERPILLAR C 7 ACERT",
+    "ResourceDescription": "AIR FILTER 2",
+    "ResourceCode": 14000677,
+    "PARTNO": "245-6376",
+    "BinLocation": "PORTABLE-1",
+    "RackNo": "B5-0228",
+    "REMARKS": "NEW MODEL"
+  },
+  {
+    "FleetDesc": "WHEEL LOADER",
+    "Capacity": "3 - 4 CUM",
+    "Make": "CATERPILLER",
+    "Model": "950 GC",
+    "EngineMakeModel": "CATERPILLAR C 7 ACERT",
+    "ResourceDescription": "HYDRAULIC FILTER 1",
+    "ResourceCode": 14000679,
+    "PARTNO": "465-6506",
+    "BinLocation": "PORTABLE-1",
+    "RackNo": "B8-0237",
+    "REMARKS": "NEW MODEL"
+  },
+  {
+    "FleetDesc": "WHEEL LOADER",
+    "Capacity": "3 - 4 CUM",
+    "Make": "CATERPILLER",
+    "Model": "950 GC",
+    "EngineMakeModel": "CATERPILLAR C 7 ACERT",
+    "ResourceDescription": "HYDRAULIC FILTER 2",
+    "ResourceCode": 14000994,
+    "PARTNO": 3416643,
+    "BinLocation": "PORTABLE-1",
+    "RackNo": "B8-0239",
+    "REMARKS": "NEW MODEL"
+  },
+  {
+    "FleetDesc": "WHEEL LOADER",
+    "Capacity": "3.40 CUM",
+    "Make": "SEM",
+    "Model": "SEM655D",
+    "ResourceDescription": "OIL FILTER",
+    "ResourceCode": 14020160,
+    "PARTNO": "540-2611",
+    "BinLocation": "PORTABLE-2",
+    "RackNo": "F2-0199",
+    "REMARKS": "REQ QTY-2"
+  },
+  {
+    "FleetDesc": "WHEEL LOADER",
+    "Capacity": "3.40 CUM",
+    "Make": "SEM",
+    "Model": "SEM655D",
+    "ResourceDescription": "FUEL FILTER",
+    "ResourceCode": 14020158,
+    "PARTNO": "571-2316",
+    "BinLocation": "PORTABLE-2",
+    "RackNo": "F2-0197",
+    "REMARKS": "REQ QTY-2"
+  },
+  {
+    "FleetDesc": "WHEEL LOADER",
+    "Capacity": "3.40 CUM",
+    "Make": "SEM",
+    "Model": "SEM655D",
+    "ResourceDescription": "FUEL WATER SEPARATOR",
+    "ResourceCode": 14020159,
+    "PARTNO": "565-1155",
+    "BinLocation": "PORTABLE-2",
+    "RackNo": "F2-0198"
+  },
+  {
+    "FleetDesc": "WHEEL LOADER",
+    "Capacity": "3.40 CUM",
+    "Make": "SEM",
+    "Model": "SEM655D",
+    "ResourceDescription": "AIR FILTER",
+    "ResourceCode": 14022557,
+    "PARTNO": "518-4406",
+    "BinLocation": "PORTABLE-2",
+    "RackNo": "F1-0250"
+  },
+  {
+    "FleetDesc": "SKID STEER LOADER",
+    "Capacity": "0.27 CUM",
+    "Make": "BOB CAT",
+    "Model": "S450",
+    "ResourceDescription": "OIL FILTER",
+    "ResourceCode": 14000710,
+    "PARTNO": 6675517,
+    "BinLocation": "PORTABLE-1",
+    "RackNo": "A10-0113"
+  },
+  {
+    "FleetDesc": "SKID STEER LOADER",
+    "Capacity": "0.27 CUM",
+    "Make": "BOB CAT",
+    "Model": "S450",
+    "ResourceDescription": "FUEL FILTER",
+    "ResourceCode": 14000711,
+    "PARTNO": 6667352,
+    "BinLocation": "PORTABLE-1",
+    "RackNo": "A10-0114"
+  },
+  {
+    "FleetDesc": "SKID STEER LOADER",
+    "Capacity": "0.27 CUM",
+    "Make": "BOB CAT",
+    "Model": "S450",
+    "ResourceDescription": "FUEL WATER SEPARATOR",
+    "ResourceCode": 14000021,
+    "PARTNO": 6683101,
+    "BinLocation": "PORTABLE-1",
+    "RackNo": "A10-0110"
+  },
+  {
+    "FleetDesc": "SKID STEER LOADER",
+    "Capacity": "0.27 CUM",
+    "Make": "BOB CAT",
+    "Model": "S450",
+    "ResourceDescription": "AIR FILTER-1",
+    "ResourceCode": 14000712,
+    "PARTNO": 6666375,
+    "BinLocation": "PORTABLE-1",
+    "RackNo": "A11-0116"
+  },
+  {
+    "FleetDesc": "SKID STEER LOADER",
+    "Capacity": "0.27 CUM",
+    "Make": "BOB CAT",
+    "Model": "S450",
+    "ResourceDescription": "AIR FILTER-2",
+    "ResourceCode": 14000713,
+    "PARTNO": 6666371,
+    "BinLocation": "PORTABLE-1",
+    "RackNo": "A11-0117"
+  },
+  {
+    "FleetDesc": "SKID STEER LOADER",
+    "Capacity": "0.27 CUM",
+    "Make": "BOB CAT",
+    "Model": "S450",
+    "ResourceDescription": "BELT ",
+    "ResourceCode": 14000715,
+    "PARTNO": 7286547,
+    "BinLocation": "PORTABLE-1",
+    "RackNo": "A14-0167"
+  },
+  {
+    "FleetDesc": "SKID STEER LOADER",
+    "Capacity": "0.27 CUM",
+    "Make": "BOB CAT",
+    "Model": "S450",
+    "ResourceDescription": "ALTERNATOR BELT",
+    "ResourceCode": 14007046,
+    "PARTNO": 7100104,
+    "BinLocation": "PORTABLE-1",
+    "RackNo": "A14-0173"
+  },
+  {
+    "FleetDesc": "SKID STEER LOADER",
+    "Capacity": "0.27 CUM",
+    "Make": "BOB CAT",
+    "Model": "S450",
+    "ResourceDescription": "HYDRAULIC OIL FILTER",
+    "ResourceCode": 14003417,
+    "PARTNO": 7319444,
+    "BinLocation": "PORTABLE-1",
+    "RackNo": "A10-0111"
+  },
+  {
+    "FleetDesc": "SKID STEER LOADER",
+    "Capacity": "0.27 CUM",
+    "Make": "BOB CAT",
+    "Model": "S450",
+    "ResourceDescription": "HYDRAULIC FILTER ",
+    "ResourceCode": 14000714,
+    "PARTNO": 6686926,
+    "BinLocation": "PORTABLE-1",
+    "RackNo": "A10-0112"
+  },
+  {
+    "FleetDesc": "SKID STEER LOADER",
+    "Capacity": "0.27 CUM",
+    "Make": "BOB CAT",
+    "Model": "S450",
+    "ResourceDescription": "STARTER",
+    "ResourceCode": 14006977,
+    "PARTNO": 6685190,
+    "BinLocation": "PORTABLE-1",
+    "RackNo": "A12-DWN-0364"
+  },
+  {
+    "FleetDesc": "SKID STEER LOADER",
+    "Capacity": "0.27 CUM",
+    "Make": "BOB CAT",
+    "Model": "S450",
+    "ResourceDescription": "ALTERNATOR",
+    "ResourceCode": 14006958,
+    "PARTNO": 6678208,
+    "BinLocation": "PORTABLE-1",
+    "RackNo": "A12-DWN-0363"
+  },
+  {
+    "FleetDesc": "SKID STEER LOADER",
+    "Capacity": "0.27 CUM",
+    "Make": "BOB CAT",
+    "Model": "S450",
+    "ResourceDescription": "WATER PUMP",
+    "ResourceCode": 14002582,
+    "PARTNO": 6685105,
+    "BinLocation": "PORTABLE-1",
+    "RackNo": "A10-0109"
+  },
+  {
+    "FleetDesc": "SKID STEER LOADER",
+    "Capacity": "0.3 CUM",
+    "Make": "CATERPILLER",
+    "Model": "216B3",
+    "ResourceDescription": "OIL FILTER",
+    "ResourceCode": 14009526,
+    "PARTNO": 2201523,
+    "BinLocation": "PORTABLE-2",
+    "RackNo": "E2-0131"
+  },
+  {
+    "FleetDesc": "SKID STEER LOADER",
+    "Capacity": "0.3 CUM",
+    "Make": "CATERPILLER",
+    "Model": "216B3",
+    "ResourceDescription": "FUEL FILTER",
+    "ResourceCode": 14004389,
+    "PARTNO": "156-1200",
+    "BinLocation": "PORTABLE-2",
+    "RackNo": "E2-0132"
+  },
+  {
+    "FleetDesc": "SKID STEER LOADER",
+    "Capacity": "0.3 CUM",
+    "Make": "CATERPILLER",
+    "Model": "216B3",
+    "ResourceDescription": "AIR FILTER-1",
+    "ResourceCode": 14015747,
+    "PARTNO": 2310168,
+    "BinLocation": "PORTABLE-2",
+    "RackNo": "E2-0130"
+  },
+  {
+    "FleetDesc": "SKID STEER LOADER",
+    "Capacity": "0.3 CUM",
+    "Make": "CATERPILLER",
+    "Model": "216B3",
+    "ResourceDescription": "AIR FILTER-2",
+    "ResourceCode": 14015748,
+    "PARTNO": 2310167,
+    "BinLocation": "PORTABLE-2",
+    "RackNo": "E2-0129"
+  },
+  {
+    "FleetDesc": "POWER GENERATOR",
+    "Capacity": "10 KVA",
+    "Make": "AGG POWER SOLUTIONS",
+    "Model": "AY11D5",
+    "ResourceDescription": "RELAY 12V",
+    "ResourceCode": 14014784,
+    "PARTNO": "MX012DC2L",
+    "BinLocation": "CONTAINER-2",
+    "RackNo": "A1-0010"
+  },
+  {
+    "FleetDesc": "POWER GENERATOR",
+    "Capacity": "10 KVA",
+    "Make": "AGG POWER SOLUTIONS",
+    "Model": "AY11D5",
+    "ResourceDescription": "CYILINDER GASKET",
+    "ResourceCode": 14018962,
+    "PARTNO": "186FA-01013",
+    "BinLocation": "CONTAINER-2",
+    "RackNo": "A1-0004"
+  },
+  {
+    "FleetDesc": "POWER GENERATOR",
+    "Capacity": "10 KVA",
+    "Make": "AGG POWER SOLUTIONS",
+    "Model": "AY11D5",
+    "ResourceDescription": "VALVE COVER GASKET",
+    "ResourceCode": 14018964,
+    "PARTNO": "186FA-03003",
+    "BinLocation": "CONTAINER-2",
+    "RackNo": "A1-0008"
+  },
+  {
+    "FleetDesc": "POWER GENERATOR",
+    "Capacity": "10 KVA",
+    "Make": "AGG POWER SOLUTIONS",
+    "Model": "AY11D5",
+    "ResourceDescription": "EXHAUST GASKET",
+    "ResourceCode": 14018963,
+    "PARTNO": "186FA-02012",
+    "BinLocation": "CONTAINER-2",
+    "RackNo": "A1-0005"
+  },
+  {
+    "FleetDesc": "TOWER LIGHT",
+    "Capacity": "10 KVA",
+    "Make": "AGG POWER SOLUTIONS",
+    "Model": "LLM-V6",
+    "EngineMakeModel": "AS2300",
+    "ResourceDescription": "OIL FILTER",
+    "ResourceCode": 14012924,
+    "PARTNO": "490B-32000",
+    "BinLocation": "CONTAINER-2",
+    "RackNo": "A1-0001"
+  },
+  {
+    "FleetDesc": "TOWER LIGHT",
+    "Capacity": "10 KVA",
+    "Make": "AGG POWER SOLUTIONS",
+    "Model": "LLM-V6",
+    "EngineMakeModel": "AS2300",
+    "ResourceDescription": "FUEL FILTER",
+    "ResourceCode": 14012925,
+    "PARTNO": "490B-24000",
+    "BinLocation": "CONTAINER-2",
+    "RackNo": "A1-0002"
+  },
+  {
+    "FleetDesc": "TOWER LIGHT",
+    "Capacity": "10 KVA",
+    "Make": "AGG POWER SOLUTIONS",
+    "Model": "LLM-V6",
+    "EngineMakeModel": "AS2300",
+    "ResourceDescription": "AIR FILTER",
+    "ResourceCode": 14014533,
+    "PARTNO": "K1317",
+    "BinLocation": "CONTAINER-2",
+    "RackNo": "A2-0094"
+  },
+  {
+    "FleetDesc": "TOWER LIGHT",
+    "Capacity": "10 KVA",
+    "Make": "AGG POWER SOLUTIONS",
+    "Model": "LLM-V6",
+    "EngineMakeModel": "AS2300",
+    "ResourceDescription": "V BELT",
+    "ResourceCode": 14011831,
+    "PARTNO": "490B4100123",
+    "BinLocation": "CONTAINER-2",
+    "RackNo": "A1-0003"
+  },
+  {
+    "FleetDesc": "POWER GENERATOR",
+    "Capacity": "10 KVA",
+    "Make": "FUJI",
+    "ResourceDescription": "OIL FILTER (LF3536)",
+    "ResourceCode": 14022812,
+    "PARTNO": "HH16032093",
+    "BinLocation": "CONTAINER-3",
+    "RackNo": "B19-0221"
+  },
+  {
+    "FleetDesc": "POWER GENERATOR",
+    "Capacity": "10 KVA",
+    "Make": "FUJI",
+    "ResourceDescription": "FUEL FILTER (FF5226)",
+    "ResourceCode": 14007727,
+    "PARTNO": 1522143170,
+    "BinLocation": "CONTAINER-3",
+    "RackNo": "B19-0222"
+  },
+  {
+    "FleetDesc": "POWER GENERATOR",
+    "Capacity": "10 KVA",
+    "Make": "FUJI",
+    "ResourceDescription": "V BELT",
+    "ResourceCode": 14022813,
+    "PARTNO": "16282-97010",
+    "BinLocation": "CONTAINER-3",
+    "RackNo": "B19-0224"
+  },
+  {
+    "FleetDesc": "POWER GENERATOR",
+    "Capacity": "10 KVA",
+    "Make": "FUJI",
+    "ResourceDescription": "FUEL FILTER(FF5468)",
+    "ResourceCode": 14007781,
+    "PARTNO": "1G31143380",
+    "BinLocation": "CONTAINER-3",
+    "RackNo": "B19-0226"
+  },
+  {
+    "FleetDesc": "POWER GENERATOR",
+    "Capacity": "10 KVA",
+    "Make": "FUJI",
+    "ResourceDescription": "ALTERNATOR",
+    "ResourceCode": 14013758,
+    "PARTNO": 1623164010,
+    "BinLocation": "CONTAINER-3",
+    "RackNo": "B19-0229"
+  },
+  {
+    "FleetDesc": "POWER GENERATOR",
+    "Capacity": "10 KVA",
+    "Make": "FUJI",
+    "ResourceDescription": "STARTER",
+    "ResourceCode": 14022814,
+    "PARTNO": "6A32059210",
+    "BinLocation": "CONTAINER-3",
+    "RackNo": "B19-0227"
+  },
+  {
+    "FleetDesc": "POWER GENERATOR",
+    "Capacity": "5 KVA",
+    "Make": "FUJI",
+    "Model": "FV-7.5SKBS",
+    "ResourceDescription": "OIL FILTER",
+    "ResourceCode": 14021811,
+    "PARTNO": "HH1J032430",
+    "BinLocation": "CONTAINER-2",
+    "RackNo": "B15-0004"
+  },
+  {
+    "FleetDesc": "POWER GENERATOR",
+    "Capacity": "5 KVA",
+    "Make": "FUJI",
+    "Model": "FV-7.5SKBS",
+    "ResourceDescription": "AIR FILTER( MD-56612)",
+    "ResourceCode": 14021810,
+    "PARTNO": 1921511220,
+    "BinLocation": "CONTAINER-3",
+    "RackNo": "B15-0007"
+  },
+  {
+    "FleetDesc": "POWER GENERATOR",
+    "Capacity": "5 KVA",
+    "Make": "FUJI",
+    "Model": "FV-7.5SKBS",
+    "ResourceDescription": "V BELT AX33",
+    "ResourceCode": 14021818,
+    "PARTNO": "REMF1345",
+    "BinLocation": "CONTAINER-3",
+    "RackNo": "B15-0041"
+  },
+  {
+    "FleetDesc": "POWER GENERATOR",
+    "Capacity": "5 KVA",
+    "Make": "FUJI",
+    "Model": "FV-7.5SKBS",
+    "ResourceDescription": "STARTER",
+    "ResourceCode": 14021817,
+    "PARTNO": 1685363014,
+    "BinLocation": "CONTAINER-3",
+    "RackNo": "B15-0003"
+  },
+  {
+    "FleetDesc": "POWER GENERATOR",
+    "Capacity": "60 KVA",
+    "Make": "JCB",
+    "Model": "G65Q5",
+    "ResourceDescription": "OIL FILTER",
+    "ResourceCode": 14006290,
+    "BinLocation": "PORTABLE-2",
+    "RackNo": "D2-0126"
+  },
+  {
+    "FleetDesc": "POWER GENERATOR",
+    "Capacity": "60 KVA",
+    "Make": "JCB",
+    "Model": "G65Q5",
+    "ResourceDescription": "FUEL FILTER",
+    "ResourceCode": 14001692,
+    "BinLocation": "PORTABLE-2",
+    "RackNo": "D2-0127"
+  },
+  {
+    "FleetDesc": "POWER GENERATOR",
+    "Capacity": "60 KVA",
+    "Make": "JCB",
+    "Model": "G65Q5",
+    "ResourceDescription": "FUEL FILTER",
+    "ResourceCode": 14013567,
+    "PARTNO": "32/0A7120",
+    "BinLocation": "PORTABLE-2",
+    "RackNo": "D2-0176"
+  },
+  {
+    "FleetDesc": "POWER GENERATOR",
+    "Capacity": "60 KVA",
+    "Make": "JCB",
+    "Model": "G65Q5",
+    "ResourceDescription": "AIR FILTER",
+    "ResourceCode": 14019431,
+    "PARTNO": "32/925401",
+    "BinLocation": "PORTABLE-2",
+    "RackNo": "D2-0177"
+  },
+  {
+    "FleetDesc": "POWER GENERATOR",
+    "Capacity": "13 KVA",
+    "Make": "JCB",
+    "Model": "G13QX",
+    "ResourceDescription": "OIL FILTER",
+    "ResourceCode": 14001734,
+    "PARTNO": "02/971635",
+    "BinLocation": "CONTAINER-3",
+    "RackNo": "B14-0193"
+  },
+  {
+    "FleetDesc": "POWER GENERATOR",
+    "Capacity": "13 KVA",
+    "Make": "JCB",
+    "Model": "G13QX",
+    "ResourceDescription": "FUEL FILTER",
+    "ResourceCode": 14000361,
+    "PARTNO": "P550048",
+    "BinLocation": "CONTAINER-3",
+    "RackNo": "B14-0132"
+  },
+  {
+    "FleetDesc": "POWER GENERATOR",
+    "Capacity": "100 KVA",
+    "Make": "CUMMINS",
+    "Model": "CD110D5",
+    "ResourceDescription": "BELT",
+    "ResourceCode": 14013919,
+    "PARTNO": 3911560,
+    "BinLocation": "PORTABLE-3",
+    "RackNo": "F1-0040"
+  },
+  {
+    "FleetDesc": "POWER GENERATOR",
+    "Capacity": "100 KVA",
+    "Make": "CUMMINS",
+    "Model": "CD110D5",
+    "ResourceDescription": "TENSIONER",
+    "ResourceCode": 14001703,
+    "PARTNO": 3937553,
+    "BinLocation": "PORTABLE-3",
+    "RackNo": "F2-0075"
+  },
+  {
+    "FleetDesc": "POWER GENERATOR",
+    "Capacity": "100 KVA",
+    "Make": "ATLAS COPCO",
+    "Model": "DPAS 110 E ME",
+    "ResourceDescription": "OIL FILTER",
+    "ResourceCode": 14013873,
+    "PARTNO": 2654407,
+    "BinLocation": "PORTABLE-2",
+    "RackNo": "C1-050"
+  },
+  {
+    "FleetDesc": "POWER GENERATOR",
+    "Capacity": "100 KVA",
+    "Make": "ATLAS COPCO",
+    "Model": "DPAS 110 E ME",
+    "ResourceDescription": "FUEL FILTER",
+    "ResourceCode": 14004388,
+    "PARTNO": 4816636,
+    "BinLocation": "PORTABLE-2",
+    "RackNo": "C1-052"
+  },
+  {
+    "FleetDesc": "POWER GENERATOR",
+    "Capacity": "100 KVA",
+    "Make": "ATLAS COPCO",
+    "Model": "DPAS 110 E ME",
+    "ResourceDescription": "FUEL WATER SEPARATOR",
+    "ResourceCode": 14014165,
+    "PARTNO": 4415122,
+    "BinLocation": "PORTABLE-2",
+    "RackNo": "C1-051"
+  },
+  {
+    "FleetDesc": "POWER GENERATOR",
+    "Capacity": "100 KVA",
+    "Make": "ATLAS COPCO",
+    "Model": "DPAS 110 E ME",
+    "ResourceDescription": "AIR FILTER",
+    "ResourceCode": 14000694,
+    "PARTNO": 26510380,
+    "BinLocation": "PORTABLE-2",
+    "RackNo": "C DWN -0056"
+  },
+  {
+    "FleetDesc": "POWER GENERATOR",
+    "Capacity": "100 KVA",
+    "Make": "ATLAS COPCO",
+    "Model": "DPAS 110 E ME",
+    "ResourceDescription": "BELT",
+    "ResourceCode": 14014168,
+    "PARTNO": "2614B653",
+    "BinLocation": "PORTABLE-2",
+    "RackNo": "C1-0049"
+  },
+  {
+    "FleetDesc": "AIR COMPRESSOR",
+    "Capacity": "282 CFM @ 7 BAR",
+    "Make": "ATLAS COPCO",
+    "Model": "XA137",
+    "ResourceDescription": "OIL FILTER",
+    "ResourceCode": 14003898,
+    "PARTNO": "LF3335",
+    "BinLocation": "CONTAINER-2",
+    "RackNo": "C DWN-0023"
+  },
+  {
+    "FleetDesc": "AIR COMPRESSOR",
+    "Capacity": "282 CFM @ 7 BAR",
+    "Make": "ATLAS COPCO",
+    "Model": "XA137",
+    "ResourceDescription": "FUEL FILTER",
+    "ResourceCode": 14000327,
+    "PARTNO": "FF5018",
+    "BinLocation": "PORTABLE-1",
+    "RackNo": "A-0001"
+  },
+  {
+    "FleetDesc": "AIR COMPRESSOR",
+    "Capacity": "282 CFM @ 7 BAR",
+    "Make": "ATLAS COPCO",
+    "Model": "XA137",
+    "ResourceDescription": "AIR FILTER 1",
+    "ResourceCode": 14009249,
+    "PARTNO": "AF25729",
+    "BinLocation": "PORTABLE-1",
+    "RackNo": "A19-0197"
+  },
+  {
+    "FleetDesc": "AIR COMPRESSOR",
+    "Capacity": "282 CFM @ 7 BAR",
+    "Make": "ATLAS COPCO",
+    "Model": "XA137",
+    "ResourceDescription": "AIR FILTER 2",
+    "ResourceCode": 14008499,
+    "PARTNO": "AF25730",
+    "BinLocation": "PORTABLE-1",
+    "RackNo": "A19-0198"
+  },
+  {
+    "FleetDesc": "AIR COMPRESSOR",
+    "Capacity": "282 CFM @ 7 BAR",
+    "Make": "ATLAS COPCO",
+    "Model": "XA137",
+    "ResourceDescription": "HYDRAULIC STRAINER FILTER",
+    "ResourceCode": 14002359,
+    "PARTNO": 2911006801,
+    "BinLocation": "PORTABLE-3",
+    "RackNo": "C2-0029"
+  },
+  {
+    "FleetDesc": "AIR COMPRESSOR",
+    "Capacity": "282 CFM @ 7 BAR",
+    "Make": "ATLAS COPCO",
+    "Model": "XA137",
+    "ResourceDescription": "FUEL PUMP",
+    "ResourceCode": 14022954,
+    "PARTNO": 2913140500,
+    "BinLocation": "PORTABLE-2",
+    "RackNo": "B1-0274"
+  },
+  {
+    "FleetDesc": "AIR COMPRESSOR",
+    "Capacity": "282 CFM @ 7 BAR",
+    "Make": "ATLAS COPCO",
+    "Model": "XA137",
+    "ResourceDescription": "COUPLING",
+    "ResourceCode": 14013987,
+    "PARTNO": "1604-0761-00",
+    "BinLocation": "PORTABLE-2",
+    "RackNo": "B2-0259"
+  },
+  {
+    "FleetDesc": "AIR COMPRESSOR",
+    "Capacity": "282 CFM @ 7 BAR",
+    "Make": "ATLAS COPCO",
+    "Model": "XA137",
+    "ResourceDescription": "GAS SPRING",
+    "ResourceCode": 14008184,
+    "PARTNO": "1626-310700",
+    "BinLocation": "PORTABLE-2",
+    "RackNo": "B1-0258"
+  },
+  {
+    "FleetDesc": "AIR COMPRESSOR",
+    "Capacity": "282 CFM @ 7 BAR",
+    "Make": "ATLAS COPCO",
+    "Model": "XA137",
+    "ResourceDescription": "HYDRAULIC FILTER",
+    "ResourceCode": 14000650,
+    "PARTNO": 1613610590,
+    "BinLocation": "PORTABLE-1",
+    "RackNo": "A18-0187"
+  },
+  {
+    "FleetDesc": "AIR COMPRESSOR",
+    "Capacity": "185 CFM @ 6.8 BAR",
+    "Make": "ATLAS COPCO",
+    "Model": "XAS-97DD",
+    "ResourceDescription": "OIL FILTER",
+    "ResourceCode": 14010346,
+    "PARTNO": "P558616",
+    "BinLocation": "PORTABLE-1",
+    "RackNo": "A16-0181"
+  },
+  {
+    "FleetDesc": "AIR COMPRESSOR",
+    "Capacity": "185 CFM @ 6.8 BAR",
+    "Make": "ATLAS COPCO",
+    "Model": "XAS-97DD",
+    "ResourceDescription": "FUEL FILTER",
+    "ResourceCode": 14000327,
+    "PARTNO": "FF5018",
+    "BinLocation": "PORTABLE-1",
+    "RackNo": "A-0001"
+  },
+  {
+    "FleetDesc": "AIR COMPRESSOR",
+    "Capacity": "185 CFM @ 6.8 BAR",
+    "Make": "ATLAS COPCO",
+    "Model": "XAS-97DD",
+    "ResourceDescription": "AIR FILTER 1",
+    "ResourceCode": 14009249,
+    "PARTNO": "AF25729",
+    "BinLocation": "PORTABLE-1",
+    "RackNo": "A19-0197"
+  },
+  {
+    "FleetDesc": "AIR COMPRESSOR",
+    "Capacity": "185 CFM @ 6.8 BAR",
+    "Make": "ATLAS COPCO",
+    "Model": "XAS-97DD",
+    "ResourceDescription": "AIR FILTER 2",
+    "ResourceCode": 14008499,
+    "PARTNO": "AF25730",
+    "BinLocation": "PORTABLE-1",
+    "RackNo": "A19-0198"
+  },
+  {
+    "FleetDesc": "AIR COMPRESSOR",
+    "Capacity": "185 CFM @ 6.8 BAR",
+    "Make": "ATLAS COPCO",
+    "Model": "XAS-97DD",
+    "ResourceDescription": "FUEL WATER SEPARATOR",
+    "ResourceCode": 14000662,
+    "PARTNO": "P551329",
+    "BinLocation": "PORTABLE-1",
+    "RackNo": "A16-0357"
+  },
+  {
+    "FleetDesc": "AIR COMPRESSOR",
+    "Capacity": "185 CFM @ 6.8 BAR",
+    "Make": "ATLAS COPCO",
+    "Model": "XAS-97DD",
+    "ResourceDescription": "HYDRAULIC STRAINER FILTER",
+    "ResourceCode": 14010349,
+    "PARTNO": 2911007501,
+    "BinLocation": "PORTABLE-3",
+    "RackNo": "D2-0026"
+  },
+  {
+    "FleetDesc": "AIR COMPRESSOR",
+    "Capacity": "185 CFM @ 6.8 BAR",
+    "Make": "ATLAS COPCO",
+    "Model": "XAS-97DD",
+    "ResourceDescription": "COUPLING",
+    "ResourceCode": 14010389,
+    "PARTNO": 160414800,
+    "BinLocation": "PORTABLE-2",
+    "RackNo": "B2-0043"
+  },
+  {
+    "FleetDesc": "AIR COMPRESSOR",
+    "Capacity": "185 CFM @ 6.8 BAR",
+    "Make": "ATLAS COPCO",
+    "Model": "XAS-97DD",
+    "ResourceDescription": "FUEL WATER SEPARATOR",
+    "ResourceCode": 14010348,
+    "PARTNO": "P551856",
+    "BinLocation": "PORTABLE-1",
+    "RackNo": "A16-0192"
+  },
+  {
+    "FleetDesc": "AIR COMPRESSOR",
+    "Capacity": "410 CFM @ 7 BAR",
+    "Make": "ATLAS COPCO",
+    "Model": "XAS400 EXPORT",
+    "ResourceDescription": "SERVICE KIT",
+    "ResourceCode": 14013934,
+    "PARTNO": 4153136725,
+    "BinLocation": "PORTABLE-3",
+    "RackNo": "D2-0027"
+  },
+  {
+    "FleetDesc": "BUS",
+    "Capacity": "55 SEATER",
+    "Make": "TATA",
+    "Model": "LPO 1618",
+    "EngineMakeModel": "CUMMINS",
+    "ResourceDescription": "OIL FILTER MAIN",
+    "ResourceCode": 14014886,
+    "BinLocation": "CONTAINER-6",
+    "RackNo": "C-1"
+  },
+  {
+    "FleetDesc": "BUS",
+    "Capacity": "55 SEATER",
+    "Make": "TATA",
+    "Model": "LPO 1618",
+    "EngineMakeModel": "CUMMINS",
+    "ResourceDescription": "FUEL FILTER MAIN",
+    "ResourceCode": 14000330,
+    "BinLocation": "CONTAINER-6",
+    "RackNo": "A-1"
+  },
+  {
+    "FleetDesc": "BUS",
+    "Capacity": "55 SEATER",
+    "Make": "TATA",
+    "Model": "LPO 1618",
+    "EngineMakeModel": "CUMMINS",
+    "ResourceDescription": "WATER SEPARATOR MAIN",
+    "ResourceCode": 14000662,
+    "BinLocation": "CONTAINER-6",
+    "RackNo": "B-1"
+  },
+  {
+    "FleetDesc": "BUS",
+    "Capacity": "55 SEATER",
+    "Make": "TATA",
+    "Model": "LPO 1618",
+    "EngineMakeModel": "CUMMINS",
+    "ResourceDescription": "AIR FILTER INNER MAIN",
+    "ResourceCode": 14000889,
+    "BinLocation": "CONTAINER-6",
+    "RackNo": "A-1"
+  },
+  {
+    "FleetDesc": "BUS",
+    "Capacity": "55 SEATER",
+    "Make": "TATA",
+    "Model": "LPO 1618",
+    "EngineMakeModel": "CUMMINS",
+    "ResourceDescription": "AIR FILTER OUTER MAIN",
+    "ResourceCode": 14000890,
+    "BinLocation": "CONTAINER-6",
+    "RackNo": "B-1"
+  },
+  {
+    "FleetDesc": "BUS",
+    "Capacity": "55 SEATER",
+    "Make": "TATA",
+    "Model": "LPO 1618",
+    "EngineMakeModel": "CUMMINS",
+    "ResourceDescription": "FAN BELT MAIN",
+    "ResourceCode": 14001134,
+    "BinLocation": "CONTAINER-6",
+    "RackNo": "F-4"
+  },
+  {
+    "FleetDesc": "BUS",
+    "Capacity": "55 SEATER",
+    "Make": "TATA",
+    "Model": "LPO 1618",
+    "EngineMakeModel": "CUMMINS",
+    "ResourceDescription": "SLACK ADJUSTER",
+    "ResourceCode": 14002091,
+    "BinLocation": "CONTAINER-6",
+    "RackNo": "F-2"
+  },
+  {
+    "FleetDesc": "BUS",
+    "Capacity": "55 SEATER",
+    "Make": "TATA",
+    "Model": "LPO 1618",
+    "EngineMakeModel": "CUMMINS",
+    "ResourceDescription": "WATER PUMP",
+    "ResourceCode": 14000642,
+    "BinLocation": "CONTAINER-6",
+    "RackNo": "F-01"
+  },
+  {
+    "FleetDesc": "BUS",
+    "Capacity": "55 SEATER",
+    "Make": "TATA",
+    "Model": "LPO 1618",
+    "EngineMakeModel": "CUMMINS",
+    "ResourceDescription": "STEERING FILTER",
+    "ResourceCode": 14000892,
+    "BinLocation": "CONTAINER-6",
+    "RackNo": "C-1"
+  },
+  {
+    "FleetDesc": "BUS",
+    "Capacity": "55 SEATER",
+    "Make": "TATA",
+    "Model": "LPO 1618",
+    "EngineMakeModel": "CUMMINS",
+    "ResourceDescription": "DOOR HANDLE ASSY 1",
+    "ResourceCode": 14007371,
+    "BinLocation": "CONTAINER-6",
+    "RackNo": "C-01"
+  },
+  {
+    "FleetDesc": "BUS",
+    "Capacity": "55 SEATER",
+    "Make": "TATA",
+    "Model": "LPO 1618",
+    "EngineMakeModel": "CUMMINS",
+    "ResourceDescription": "DOOR HANDLE ASSY 2",
+    "ResourceCode": 14007373,
+    "BinLocation": "CONTAINER-6",
+    "RackNo": "C-001"
+  },
+  {
+    "FleetDesc": "BUS",
+    "Capacity": "55 SEATER",
+    "Make": "TATA",
+    "Model": "LPO 1618",
+    "EngineMakeModel": "CUMMINS",
+    "ResourceDescription": "DOOR LOCK ASSY",
+    "ResourceCode": 14001285,
+    "BinLocation": "CONTAINER-6",
+    "RackNo": "C-0001"
+  },
+  {
+    "FleetDesc": "BUS",
+    "Capacity": "55 SEATER",
+    "Make": "TATA",
+    "Model": "LPO 1618",
+    "EngineMakeModel": "CUMMINS",
+    "ResourceDescription": "FUEL FILTER AC",
+    "ResourceCode": 14014887,
+    "BinLocation": "CONTAINER-6",
+    "RackNo": "C-02"
+  },
+  {
+    "FleetDesc": "BUS",
+    "Capacity": "55 SEATER",
+    "Make": "TATA",
+    "Model": "LPO 1618",
+    "EngineMakeModel": "CUMMINS",
+    "ResourceDescription": "TENSIONER BELT",
+    "ResourceCode": 14007437,
+    "BinLocation": "CONTAINER-6",
+    "RackNo": "F-10"
+  },
+  {
+    "FleetDesc": "BUS",
+    "Capacity": "55 SEATER",
+    "Make": "TATA",
+    "Model": "LPO 1618",
+    "EngineMakeModel": "CUMMINS",
+    "ResourceDescription": "CLUTCH MASTER CYILINDER ",
+    "ResourceCode": 14000688,
+    "BinLocation": "CONTAINER-6",
+    "RackNo": "F-19"
+  },
+  {
+    "FleetDesc": "BUS",
+    "Capacity": "55 SEATER",
+    "Make": "TATA",
+    "Model": "LPO 1618",
+    "EngineMakeModel": "CUMMINS",
+    "ResourceDescription": "NEEDLE BUSH",
+    "ResourceCode": 14001131,
+    "BinLocation": "CONTAINER-6",
+    "RackNo": "F-20"
+  },
+  {
+    "FleetDesc": "BUS",
+    "Capacity": "55 SEATER",
+    "Make": "TATA",
+    "Model": "LPO 1618",
+    "EngineMakeModel": "CUMMINS",
+    "ResourceDescription": "DOOR JACK",
+    "ResourceCode": 14002565,
+    "BinLocation": "CONTAINER-6",
+    "RackNo": "F-21"
+  },
+  {
+    "FleetDesc": "BUS",
+    "Capacity": "55 SEATER",
+    "Make": "TATA",
+    "Model": "LPO 1618",
+    "EngineMakeModel": "CUMMINS",
+    "ResourceDescription": "UNIVERSAL JOINT ASSY",
+    "ResourceCode": 14001133,
+    "BinLocation": "CONTAINER-6",
+    "RackNo": "C-23"
+  },
+  {
+    "FleetDesc": "BUS",
+    "Capacity": "55 SEATER",
+    "Make": "TATA",
+    "Model": "LPO 1618",
+    "EngineMakeModel": "CUMMINS",
+    "ResourceDescription": "FUEL STRAINER FILTER",
+    "ResourceCode": 14002127,
+    "BinLocation": "CONTAINER-6",
+    "RackNo": "C-13"
+  },
+  {
+    "FleetDesc": "BUS",
+    "Capacity": "55 SEATER",
+    "Make": "TATA",
+    "Model": "LPO 1618",
+    "EngineMakeModel": "CUMMINS",
+    "ResourceDescription": "RADIATOR CAP",
+    "ResourceCode": 14002093,
+    "BinLocation": "CONTAINER-6",
+    "RackNo": "G-3"
+  },
+  {
+    "FleetDesc": "BUS",
+    "Capacity": "55 SEATER",
+    "Make": "TATA",
+    "Model": "LPO 1618",
+    "EngineMakeModel": "CUMMINS",
+    "ResourceDescription": "BRAKE LINER KIT FRONT",
+    "ResourceCode": 14016541,
+    "BinLocation": "CONTAINER-6",
+    "RackNo": "H-17"
+  },
+  {
+    "FleetDesc": "BUS",
+    "Capacity": "55 SEATER",
+    "Make": "TATA",
+    "Model": "LPO 1618",
+    "EngineMakeModel": "CUMMINS",
+    "ResourceDescription": "BRAKE LINER KIT REAR",
+    "ResourceCode": 14016542,
+    "BinLocation": "CONTAINER-6",
+    "RackNo": "D-16"
+  },
+  {
+    "FleetDesc": "BUS",
+    "Capacity": "55 SEATER",
+    "Make": "TATA",
+    "Model": "LPO 1618",
+    "EngineMakeModel": "CUMMINS",
+    "ResourceDescription": "CLUTCH BOOSTER",
+    "ResourceCode": 14000239,
+    "BinLocation": "CONTAINER-6",
+    "RackNo": "H-5"
+  },
+  {
+    "FleetDesc": "BUS",
+    "Capacity": "55 SEATER",
+    "Make": "TATA",
+    "Model": "LPO 1618",
+    "EngineMakeModel": "CUMMINS",
+    "ResourceDescription": "CYILINDER HEAD GASKET",
+    "ResourceCode": 14011111,
+    "BinLocation": "CONTAINER-6",
+    "RackNo": "A-28"
+  },
+  {
+    "FleetDesc": "BUS",
+    "Capacity": "55 SEATER",
+    "Make": "TATA",
+    "Model": "LPO 1618",
+    "EngineMakeModel": "CUMMINS",
+    "ResourceDescription": "BALL JOINT",
+    "ResourceCode": 14007353,
+    "PARTNO": 264126800225,
+    "BinLocation": "CONTAINER-6",
+    "RackNo": "B-10"
+  },
+  {
+    "FleetDesc": "BUS",
+    "Capacity": "55 SEATER",
+    "Make": "TATA",
+    "Model": "LPO 1618",
+    "EngineMakeModel": "CUMMINS",
+    "ResourceDescription": "BALL JOINT",
+    "ResourceCode": 14007352,
+    "PARTNO": 264126800224,
+    "BinLocation": "CONTAINER-6",
+    "RackNo": "B-14"
+  },
+  {
+    "FleetDesc": "BUS",
+    "Capacity": "55 SEATER",
+    "Make": "TATA",
+    "Model": "LPO 1618",
+    "EngineMakeModel": "CUMMINS",
+    "ResourceDescription": "AIR DRYER ASSY",
+    "ResourceCode": 14000077,
+    "BinLocation": "CONTAINER-6",
+    "RackNo": "E-1"
+  },
+  {
+    "FleetDesc": "BUS",
+    "Capacity": "55 SEATER",
+    "Make": "TATA",
+    "Model": "LPO 1618",
+    "EngineMakeModel": "CUMMINS",
+    "ResourceDescription": "ALTERNATOR ASSY",
+    "ResourceCode": 14002087,
+    "BinLocation": "CONTAINER-6",
+    "RackNo": "E-2"
+  },
+  {
+    "FleetDesc": "BUS",
+    "Capacity": "55 SEATER",
+    "Make": "TATA",
+    "Model": "LPO 1618",
+    "EngineMakeModel": "CUMMINS",
+    "ResourceDescription": "STARTER 24V",
+    "ResourceCode": 14000564,
+    "BinLocation": "CONTAINER-6",
+    "RackNo": "E-3"
+  },
+  {
+    "FleetDesc": "BUS",
+    "Capacity": "55 SEATER",
+    "Make": "TATA",
+    "Model": "LPO 1618",
+    "EngineMakeModel": "CUMMINS",
+    "ResourceDescription": "DDU REPAIR KIT",
+    "ResourceCode": 14012857,
+    "BinLocation": "CONTAINER-6",
+    "RackNo": "F1-3"
+  },
+  {
+    "FleetDesc": "BUS",
+    "Capacity": "55 SEATER",
+    "Make": "TATA",
+    "Model": "LPO 1618",
+    "EngineMakeModel": "CUMMINS",
+    "ResourceDescription": "CENTER BEARING",
+    "ResourceCode": 14003857,
+    "BinLocation": "CONTAINER-6",
+    "RackNo": "F1-6"
+  },
+  {
+    "FleetDesc": "BUS",
+    "Capacity": "55 SEATER",
+    "Make": "TATA",
+    "Model": "LPO 1618",
+    "EngineMakeModel": "CUMMINS",
+    "ResourceDescription": "GEAR BOX OIL SEAL",
+    "ResourceCode": 14012854,
+    "BinLocation": "CONTAINER-6",
+    "RackNo": "F1-7"
+  },
+  {
+    "FleetDesc": "BUS",
+    "Capacity": "55 SEATER",
+    "Make": "TATA",
+    "Model": "LPO 1618",
+    "EngineMakeModel": "CUMMINS",
+    "ResourceDescription": "CLUTCH RELEASE YOKE",
+    "ResourceCode": 14007399,
+    "BinLocation": "CONTAINER-6",
+    "RackNo": "F1-27"
+  },
+  {
+    "FleetDesc": "BUS",
+    "Capacity": "55 SEATER",
+    "Make": "TATA",
+    "Model": "LPO 1618",
+    "EngineMakeModel": "CUMMINS",
+    "ResourceDescription": "CENTER BEARING BRACKET",
+    "ResourceCode": 14007348,
+    "BinLocation": "CONTAINER-6",
+    "RackNo": "G-1"
+  },
+  {
+    "FleetDesc": "BUS",
+    "Capacity": "55 SEATER",
+    "Make": "TATA",
+    "Model": "LPO 1618",
+    "EngineMakeModel": "CUMMINS",
+    "ResourceDescription": "OIL FILTER AC ENGINE",
+    "ResourceCode": 14000479,
+    "BinLocation": "CONTAINER-6",
+    "RackNo": "B-28"
+  },
+  {
+    "FleetDesc": "BUS",
+    "Capacity": "55 SEATER",
+    "Make": "TATA",
+    "Model": "LPO 1618",
+    "EngineMakeModel": "CUMMINS",
+    "ResourceDescription": "FUEL FILTER AC ENGINE",
+    "ResourceCode": 14014887,
+    "BinLocation": "CONTAINER-6",
+    "RackNo": "C-02"
+  },
+  {
+    "FleetDesc": "BUS",
+    "Capacity": "55 SEATER",
+    "Make": "TATA",
+    "Model": "LPO 1618",
+    "EngineMakeModel": "CUMMINS",
+    "ResourceDescription": "AIR FILTER AC ENGINE",
+    "ResourceCode": 14000893,
+    "BinLocation": "CONTAINER-6",
+    "RackNo": "D-6"
+  },
+  {
+    "FleetDesc": "BUS",
+    "Capacity": "55 SEATER",
+    "Make": "TATA",
+    "Model": "LPO 1618",
+    "EngineMakeModel": "CUMMINS",
+    "ResourceDescription": " TENSIONER PULLY SMALL AC ENGINE",
+    "ResourceCode": 14000585,
+    "BinLocation": "CONTAINER-6",
+    "RackNo": "G-7"
+  },
+  {
+    "FleetDesc": "BUS",
+    "Capacity": "55 SEATER",
+    "Make": "TATA",
+    "Model": "LPO 1618",
+    "EngineMakeModel": "CUMMINS",
+    "ResourceDescription": "TENSIONER PULLY BIG AC ENGINE",
+    "ResourceCode": 14000586,
+    "BinLocation": "CONTAINER-6",
+    "RackNo": "G-8"
+  },
+  {
+    "FleetDesc": "BUS",
+    "Capacity": "55 SEATER",
+    "Make": "TATA",
+    "Model": "LPO 1618",
+    "EngineMakeModel": "CUMMINS",
+    "ResourceDescription": "TIMING BELT BIG AC ENGINE",
+    "ResourceCode": 14000593,
+    "BinLocation": "CONTAINER-6",
+    "RackNo": "H-9"
+  },
+  {
+    "FleetDesc": "BUS",
+    "Capacity": "55 SEATER",
+    "Make": "TATA",
+    "Model": "LPO 1618",
+    "EngineMakeModel": "CUMMINS",
+    "ResourceDescription": "TIMING BELT SMALL AC ENGINE",
+    "ResourceCode": 14000594,
+    "BinLocation": "CONTAINER-6",
+    "RackNo": "H-10"
+  },
+  {
+    "FleetDesc": "BUS",
+    "Capacity": "55 SEATER",
+    "Make": "TATA",
+    "Model": "LPO 1618",
+    "EngineMakeModel": "CUMMINS",
+    "ResourceDescription": "FAN BELT AC ENGINE",
+    "ResourceCode": 14002565,
+    "PARTNO": "BX45",
+    "BinLocation": "CONTAINER-6"
+  },
+  {
+    "FleetDesc": "BUS",
+    "Capacity": "55 SEATER",
+    "Make": "TATA",
+    "Model": "LPO 1618",
+    "EngineMakeModel": "CUMMINS",
+    "ResourceDescription": "TEMPARATURE SENSOR AC ENGINE",
+    "ResourceCode": 14001212,
+    "BinLocation": "CONTAINER-6",
+    "RackNo": "B-17"
+  },
+  {
+    "FleetDesc": "BUS",
+    "Capacity": "55 SEATER",
+    "Make": "TATA",
+    "Model": "LPO 1618",
+    "EngineMakeModel": "CUMMINS",
+    "ResourceDescription": "OIL PRESSURE SWITCH AC ENGINE",
+    "ResourceCode": 14013870,
+    "BinLocation": "CONTAINER-6",
+    "RackNo": "B-18"
+  },
+  {
+    "FleetDesc": "BUS",
+    "Capacity": "55 SEATER",
+    "Make": "TATA",
+    "Model": "LPO 1618",
+    "EngineMakeModel": "CUMMINS",
+    "ResourceDescription": "WATER PUMP AC ENGINE",
+    "ResourceCode": 14001555,
+    "BinLocation": "CONTAINER-6",
+    "RackNo": "E-1"
+  },
+  {
+    "FleetDesc": "BUS",
+    "Capacity": "55 SEATER",
+    "Make": "TATA",
+    "Model": "LPO 1618",
+    "EngineMakeModel": "CUMMINS",
+    "ResourceDescription": "STARTER AC ENGINE",
+    "ResourceCode": 14009384,
+    "BinLocation": "CONTAINER-6",
+    "RackNo": "H-1"
+  },
+  {
+    "FleetDesc": "BUS",
+    "Capacity": "55 SEATER",
+    "Make": "TATA",
+    "Model": "LPO 1618",
+    "EngineMakeModel": "CUMMINS",
+    "ResourceDescription": "COOLANT TANK AC ENGINE",
+    "ResourceCode": 14001156,
+    "BinLocation": "CONTAINER-6",
+    "RackNo": "G-15"
+  },
+  {
+    "FleetDesc": "BUS",
+    "Capacity": "55 SEATER",
+    "Make": "TATA",
+    "Model": "LPO 1618",
+    "EngineMakeModel": "CUMMINS",
+    "ResourceDescription": "PISTON RING SET AC ENGINE",
+    "ResourceCode": 14002448,
+    "BinLocation": "CONTAINER-6",
+    "RackNo": "G-18"
+  },
+  {
+    "FleetDesc": "BUS",
+    "Capacity": "55 SEATER",
+    "Make": "TATA",
+    "Model": "LPO 1618",
+    "EngineMakeModel": "CUMMINS",
+    "ResourceDescription": "PISTON & PIN ASSY AC ENGINE",
+    "ResourceCode": 14013975,
+    "BinLocation": "CONTAINER-6",
+    "RackNo": "G-22"
+  },
+  {
+    "FleetDesc": "BUS",
+    "Capacity": "55 SEATER",
+    "Make": "TATA",
+    "Model": "LPO 1618",
+    "EngineMakeModel": "CUMMINS",
+    "ResourceDescription": "ROCKER ARM SHAFT AC ENGINE",
+    "ResourceCode": 14002453,
+    "BinLocation": "CONTAINER-6",
+    "RackNo": "G-24"
+  },
+  {
+    "FleetDesc": "BUS",
+    "Capacity": "55 SEATER",
+    "Make": "TATA",
+    "Model": "LPO 1618",
+    "EngineMakeModel": "CUMMINS",
+    "ResourceDescription": "CAMSHAFT ASSY AC ENGINE",
+    "ResourceCode": 14002454,
+    "BinLocation": "CONTAINER-6",
+    "RackNo": "G-25"
+  },
+  {
+    "FleetDesc": "BUS",
+    "Capacity": "55 SEATER",
+    "Make": "TATA",
+    "Model": "LPO 1618",
+    "EngineMakeModel": "CUMMINS",
+    "ResourceDescription": "CYILINDER HEAD AC ENGINE",
+    "ResourceCode": 14002459,
+    "BinLocation": "CONTAINER-6",
+    "RackNo": "G-025"
+  },
+  {
+    "FleetDesc": "BUS",
+    "Capacity": "55 SEATER",
+    "Make": "TATA",
+    "Model": "LPO 1618",
+    "EngineMakeModel": "CUMMINS",
+    "ResourceDescription": "OVERHAUL ENGINE GASKET KIT AC ENGINE",
+    "ResourceCode": 14003463,
+    "BinLocation": "CONTAINER-6",
+    "RackNo": "G-26"
+  },
+  {
+    "FleetDesc": "BUS",
+    "Capacity": "55 SEATER",
+    "Make": "TATA",
+    "Model": "LPO 1618",
+    "EngineMakeModel": "CUMMINS",
+    "ResourceDescription": "ALTERNATOR AC ENGINE",
+    "ResourceCode": 14009385,
+    "BinLocation": "CONTAINER-7"
+  },
+  {
+    "FleetDesc": "DUMP TRUCK - TRUCK MOUNTED",
+    "Capacity": "16 - 18 CUM",
+    "Make": "TATA",
+    "Model": "PRIMA 4040.K",
+    "ResourceDescription": "AIR PROCESSING UNIT",
+    "ResourceCode": 14016573,
+    "BinLocation": "CONTAINER-6",
+    "RackNo": "A-13"
+  },
+  {
+    "FleetDesc": "DUMP TRUCK - TRUCK MOUNTED",
+    "Capacity": "16 - 18 CUM",
+    "Make": "TATA",
+    "Model": "PRIMA 4040.K",
+    "ResourceDescription": "TIE ROD END RH",
+    "ResourceCode": 14021626,
+    "BinLocation": "CONTAINER-6",
+    "RackNo": "B-27"
+  },
+  {
+    "FleetDesc": "DUMP TRUCK - TRUCK MOUNTED",
+    "Capacity": "16 - 18 CUM",
+    "Make": "TATA",
+    "Model": "PRIMA 4040.K",
+    "ResourceDescription": "TIE ROD END LH",
+    "ResourceCode": 14021627,
+    "BinLocation": "CONTAINER-6",
+    "RackNo": "B-28"
+  },
+  {
+    "FleetDesc": "DUMP TRUCK - TRUCK MOUNTED",
+    "Capacity": "16 - 18 CUM",
+    "Make": "TATA",
+    "Model": "PRIMA 4040.K",
+    "ResourceDescription": "BRAKE LINING KIT REAR",
+    "ResourceCode": 14016567,
+    "BinLocation": "CONTAINER-6",
+    "RackNo": "D-3"
+  },
+  {
+    "FleetDesc": "DUMP TRUCK - TRUCK MOUNTED",
+    "Capacity": "16 - 18 CUM",
+    "Make": "TATA",
+    "Model": "PRIMA 4040.K",
+    "ResourceDescription": "BRAKE LINING KIT FRONT",
+    "ResourceCode": 14016566,
+    "BinLocation": "CONTAINER-6",
+    "RackNo": "D-4"
+  },
+  {
+    "FleetDesc": "DUMP TRUCK - TRUCK MOUNTED",
+    "Capacity": "16 - 18 CUM",
+    "Make": "TATA",
+    "Model": "PRIMA 4040.K",
+    "ResourceDescription": "OIL FILTER PRIMA",
+    "ResourceCode": 14007318,
+    "BinLocation": "CONTAINER-6",
+    "RackNo": "E-6"
+  },
+  {
+    "FleetDesc": "DUMP TRUCK - TRUCK MOUNTED",
+    "Capacity": "16 - 18 CUM",
+    "Make": "TATA",
+    "Model": "PRIMA 4040.K",
+    "ResourceDescription": "FUEL FILTER PRIMA",
+    "ResourceCode": 14003883,
+    "BinLocation": "CONTAINER-6",
+    "RackNo": "F1-13"
+  },
+  {
+    "FleetDesc": "DUMP TRUCK - TRUCK MOUNTED",
+    "Capacity": "16 - 18 CUM",
+    "Make": "TATA",
+    "Model": "PRIMA 4040.K",
+    "ResourceDescription": "FUEL WATER SEPARATOR",
+    "ResourceCode": 14000371,
+    "BinLocation": "CONTAINER-6",
+    "RackNo": "F1-16"
+  },
+  {
+    "FleetDesc": "DUMP TRUCK - TRUCK MOUNTED",
+    "Capacity": "16 - 18 CUM",
+    "Make": "TATA",
+    "Model": "PRIMA 4040.K",
+    "ResourceDescription": "CLUTCH FAN",
+    "ResourceCode": 14002145,
+    "BinLocation": "CONTAINER-6",
+    "RackNo": "F1-22"
+  },
+  {
+    "FleetDesc": "BUS",
+    "Capacity": "55 SEATER",
+    "Make": "TATA",
+    "Model": "LPO 1618",
+    "EngineMakeModel": "CUMMINS",
+    "ResourceDescription": "WATER SEPARATOR MAIN ORGINAL",
+    "ResourceCode": 14000660,
+    "BinLocation": "CONTAINER-8",
+    "REMARKS": "ORGINAL PARTS"
+  },
+  {
+    "FleetDesc": "BUS",
+    "Capacity": "55 SEATER",
+    "Make": "TATA",
+    "Model": "LPO 1618",
+    "EngineMakeModel": "CUMMINS",
+    "ResourceDescription": "FUEL FILTER ORGINAL",
+    "ResourceCode": 14000324,
+    "BinLocation": "CONTAINER-9",
+    "REMARKS": "ORGINAL PARTS"
+  },
+  {
+    "FleetDesc": "BUS",
+    "Capacity": "55 SEATER",
+    "Make": "TATA",
+    "Model": "LPO 1618",
+    "EngineMakeModel": "CUMMINS",
+    "ResourceDescription": "TAIL LAMP RED",
+    "ResourceCode": 14002572,
+    "BinLocation": "CONTAINER-7",
+    "RackNo": "D1"
+  },
+  {
+    "FleetDesc": "BUS",
+    "Capacity": "55 SEATER",
+    "Make": "TATA",
+    "Model": "LPO 1618",
+    "EngineMakeModel": "CUMMINS",
+    "ResourceDescription": "HEAD LAMP",
+    "ResourceCode": 14001752,
+    "BinLocation": "CONTAINER-7",
+    "RackNo": "B DOWN"
+  },
+  {
+    "FleetDesc": "BUS",
+    "Capacity": "55 SEATER",
+    "Make": "TATA",
+    "Model": "LPO 1618",
+    "EngineMakeModel": "CUMMINS",
+    "ResourceDescription": "SIDE MARKER LIGHT",
+    "ResourceCode": 14000984,
+    "BinLocation": "CONTAINER-7",
+    "RackNo": "C"
+  },
+  {
+    "FleetDesc": "BUS",
+    "Capacity": "55 SEATER",
+    "Make": "TATA",
+    "Model": "LPO 1618",
+    "EngineMakeModel": "CUMMINS",
+    "ResourceDescription": "WIPER BLADE 32\"",
+    "ResourceCode": 14001335,
+    "BinLocation": "CONTAINER-7",
+    "RackNo": "C1"
+  },
+  {
+    "FleetDesc": "BUS",
+    "Capacity": "55 SEATER",
+    "Make": "TATA",
+    "Model": "LPO 1618",
+    "EngineMakeModel": "CUMMINS",
+    "ResourceDescription": "BULB R10 W 24V",
+    "ResourceCode": 14000001,
+    "BinLocation": "CONTAINER-7",
+    "RackNo": "A"
+  },
+  {
+    "FleetDesc": "BUS",
+    "Capacity": "55 SEATER",
+    "Make": "TATA",
+    "Model": "LPO 1618",
+    "EngineMakeModel": "CUMMINS",
+    "ResourceDescription": "COMBINATION SWITCH",
+    "ResourceCode": 14000932,
+    "BinLocation": "CONTAINER-7",
+    "RackNo": "B"
+  },
+  {
+    "FleetDesc": "BUS",
+    "Capacity": "55 SEATER",
+    "Make": "TATA",
+    "Model": "LPO 1618",
+    "EngineMakeModel": "CUMMINS",
+    "ResourceDescription": "WIPER TANK",
+    "ResourceCode": 14001050,
+    "BinLocation": "CONTAINER-7",
+    "RackNo": "B"
+  },
+  {
+    "FleetDesc": "BUS",
+    "Capacity": "55 SEATER",
+    "Make": "TATA",
+    "Model": "LPO 1618",
+    "EngineMakeModel": "CUMMINS",
+    "ResourceDescription": "AC CONTROL PANEL",
+    "ResourceCode": 14001115,
+    "BinLocation": "CONTAINER-7",
+    "RackNo": "D1"
+  },
+  {
+    "FleetDesc": "BUS",
+    "Capacity": "55 SEATER",
+    "Make": "TATA",
+    "Model": "LPO 1618",
+    "EngineMakeModel": "CUMMINS",
+    "ResourceDescription": "CLUSTER BOARD",
+    "ResourceCode": 14009051,
+    "BinLocation": "CONTAINER-7",
+    "RackNo": "D DWN"
+  },
+  {
+    "FleetDesc": "BUS",
+    "Capacity": "55 SEATER",
+    "Make": "TATA",
+    "Model": "LPO 1618",
+    "EngineMakeModel": "CUMMINS",
+    "ResourceDescription": "BLOWER FAN MOTOR",
+    "ResourceCode": 14001112,
+    "BinLocation": "CONTAINER-7",
+    "RackNo": "E1"
+  },
+  {
+    "FleetDesc": "BUS",
+    "Capacity": "55 SEATER",
+    "Make": "TATA",
+    "Model": "LPO 1618",
+    "EngineMakeModel": "CUMMINS",
+    "ResourceDescription": "CONDENSOR FAN MOTOR",
+    "ResourceCode": 14001327,
+    "BinLocation": "CONTAINER-7",
+    "RackNo": "E1"
+  },
+  {
+    "FleetDesc": "BUS",
+    "Capacity": "55 SEATER",
+    "Make": "TATA",
+    "Model": "LPO 1618",
+    "EngineMakeModel": "CUMMINS",
+    "ResourceDescription": "CONDENSOR FAN LEAF",
+    "ResourceCode": 14006730,
+    "BinLocation": "CONTAINER-7",
+    "RackNo": "F-DWN"
+  },
+  {
+    "FleetDesc": "BUS",
+    "Capacity": "55 SEATER",
+    "Make": "TATA",
+    "Model": "LPO 1618",
+    "EngineMakeModel": "CUMMINS",
+    "ResourceDescription": "TAIL LAMP YELLOW",
+    "ResourceCode": 14002696,
+    "BinLocation": "CONTAINER-7",
+    "RackNo": "D1"
+  },
+  {
+    "FleetDesc": "BUS",
+    "Capacity": "55 SEATER",
+    "Make": "TATA",
+    "Model": "LPO 1618",
+    "EngineMakeModel": "CUMMINS",
+    "ResourceDescription": "TOP ROOF LAMP HEIGHT MARKER RED",
+    "ResourceCode": 14001053,
+    "BinLocation": "CONTAINER-7",
+    "RackNo": "B"
+  },
+  {
+    "FleetDesc": "BUS",
+    "Capacity": "55 SEATER",
+    "Make": "TATA",
+    "Model": "LPO 1618",
+    "EngineMakeModel": "CUMMINS",
+    "ResourceDescription": "DRAG LINK ASSY",
+    "ResourceCode": 14001006,
+    "PARTNO": 504046300102,
+    "BinLocation": "CONTAINER-7",
+    "RackNo": "D-013"
+  },
+  {
+    "FleetDesc": "BUS",
+    "Capacity": "55 SEATER",
+    "Make": "TATA",
+    "Model": "LPO 1618",
+    "EngineMakeModel": "CUMMINS",
+    "ResourceDescription": "NUMBER PLATE LIGHT",
+    "ResourceCode": 14007465,
+    "BinLocation": "CONTAINER-7",
+    "RackNo": "B1"
+  },
+  {
+    "FleetDesc": "BUS",
+    "Capacity": "55 SEATER",
+    "Make": "TATA",
+    "Model": "LPO 1618",
+    "EngineMakeModel": "CUMMINS",
+    "ResourceDescription": "BREAKE LIGHT",
+    "ResourceCode": 14001978,
+    "BinLocation": "CONTAINER-7",
+    "RackNo": "A"
+  },
+  {
+    "FleetDesc": "BUS",
+    "Capacity": "65 SEATER",
+    "Make": "ASHOKLEYLAND",
+    "Model": "FALCON",
+    "ResourceDescription": "OIL FILTER",
+    "ResourceCode": 14000470,
+    "PARTNO": "X4001000",
+    "BinLocation": "CONTAINER-9"
+  },
+  {
+    "FleetDesc": "BUS",
+    "Capacity": "65 SEATER",
+    "Make": "ASHOKLEYLAND",
+    "Model": "FALCON",
+    "ResourceDescription": "CENTER BEARING ASSY",
+    "ResourceCode": 14006769,
+    "PARTNO": "F0P00900",
+    "BinLocation": "CONTAINER-9"
+  },
+  {
+    "FleetDesc": "BUS",
+    "Capacity": "65 SEATER",
+    "Make": "ASHOKLEYLAND",
+    "Model": "FALCON",
+    "ResourceDescription": "KING PIN KT, ASHOK LEYLAND",
+    "ResourceCode": 14016243,
+    "PARTNO": "PS104856",
+    "BinLocation": "CONTAINER-9"
+  },
+  {
+    "FleetDesc": "BOOM TRUCK",
+    "Capacity": "5 - 11  MT",
+    "Make": "HINO",
+    "Model": "FM8JRSA-500",
+    "ResourceDescription": "OIL FILTER",
+    "ResourceCode": 14014696,
+    "BinLocation": "CONTAINER-5",
+    "RackNo": "E"
+  },
+  {
+    "FleetDesc": "BOOM TRUCK",
+    "Capacity": "5 - 11  MT",
+    "Make": "MAN",
+    "Model": "TGS33.360",
+    "ResourceDescription": "OIL FILTER",
+    "ResourceCode": 14012833,
+    "BinLocation": "CONTAINER-8"
+  },
+  {
+    "FleetDesc": "BOOM TRUCK",
+    "Capacity": "5 - 11  MT",
+    "Make": "MAN",
+    "Model": "TGS33.360",
+    "ResourceDescription": "FUEL FILTER",
+    "ResourceCode": 14014442,
+    "BinLocation": "CONTAINER-8"
+  },
+  {
+    "FleetDesc": "CAR",
+    "Capacity": "5  SEATER",
+    "Make": "SUZUKI",
+    "Model": "VITARA GLX 4WD",
+    "ResourceDescription": "OIL FILTER",
+    "ResourceCode": 14022955,
+    "BinLocation": "CONTAINER-5",
+    "RackNo": "I-3"
+  },
+  {
+    "FleetDesc": "CAR",
+    "Capacity": "5  SEATER",
+    "Make": "SUZUKI",
+    "Model": "VITARA GLX 4WD",
+    "ResourceDescription": "AIR FILTER",
+    "ResourceCode": 14022958,
+    "BinLocation": "CONTAINER-5",
+    "RackNo": "I-3"
+  },
+  {
+    "FleetDesc": "CAR",
+    "Capacity": "5  SEATER",
+    "Make": "SUZUKI",
+    "Model": "VITARA GLX 4WD",
+    "ResourceDescription": "SPARK PLUG",
+    "ResourceCode": 14022957,
+    "BinLocation": "CONTAINER-5",
+    "RackNo": "I-3"
+  },
+  {
+    "FleetDesc": "CAR",
+    "Capacity": "5  SEATER",
+    "Make": "SUZUKI",
+    "Model": "VITARA GLX 4WD",
+    "ResourceDescription": "SEAL RING",
+    "ResourceCode": 14022956,
+    "BinLocation": "CONTAINER-5",
+    "RackNo": "I-3"
+  },
+  {
+    "FleetDesc": "CAR",
+    "Capacity": "5  SEATER",
+    "Make": "SUZUKI",
+    "Model": "VITARA GLX 4WD",
+    "ResourceDescription": "AC FILTER",
+    "ResourceCode": 14022959,
+    "BinLocation": "CONTAINER-5",
+    "RackNo": "I-3"
+  },
+  {
+    "FleetDesc": "CAR",
+    "Capacity": "5  SEATER",
+    "Make": "TOYOTA",
+    "Model": "CAMRY",
+    "ResourceDescription": "OIL FILTER",
+    "ResourceCode": 14003584,
+    "BinLocation": "CONTAINER-5",
+    "RackNo": "C"
+  },
+  {
+    "FleetDesc": "MINI VAN",
+    "Capacity": "15 SEATER",
+    "Make": "TOYOTA",
+    "Model": "HIACE",
+    "ResourceDescription": "OIL FILTER",
+    "ResourceCode": 14001639,
+    "BinLocation": "CONTAINER-5"
+  },
+  {
+    "FleetDesc": "MINI VAN",
+    "Capacity": "15 SEATER",
+    "Make": "TOYOTA",
+    "Model": "HIACE",
+    "ResourceDescription": "AIR FILTER",
+    "ResourceCode": 14003660,
+    "BinLocation": "CONTAINER-5"
+  },
+  {
+    "FleetDesc": "MINI VAN",
+    "Capacity": "15 SEATER",
+    "Make": "TOYOTA",
+    "Model": "HIACE",
+    "ResourceDescription": "AC CABIN FILTER",
+    "ResourceCode": 14001851,
+    "BinLocation": "CONTAINER-5",
+    "RackNo": "F1"
+  },
+  {
+    "FleetDesc": "MINI TRUCK",
+    "Capacity": "3 - 5 MT",
+    "Make": "ISUZU",
+    "Model": "NPR",
+    "ResourceDescription": "OIL FILTER",
+    "ResourceCode": 14015342,
+    "BinLocation": "CONTAINER-6",
+    "RackNo": "G-30"
+  },
+  {
+    "FleetDesc": "MINI TRUCK",
+    "Capacity": "3 - 5 MT",
+    "Make": "ISUZU",
+    "Model": "NPR",
+    "ResourceDescription": "FUEL FILTER",
+    "ResourceCode": 14019485,
+    "BinLocation": "CONTAINER-6",
+    "RackNo": "G-29"
+  },
+  {
+    "FleetDesc": "MINI TRUCK",
+    "Capacity": "3 - 5 MT",
+    "Make": "ISUZU",
+    "Model": "NPR",
+    "ResourceDescription": "FUEL FILTER",
+    "ResourceCode": 14020219,
+    "BinLocation": "CONTAINER-6",
+    "RackNo": "G-28"
+  },
+  {
+    "FleetDesc": "MINI TRUCK",
+    "Capacity": "3 - 5 MT",
+    "Make": "ISUZU",
+    "Model": "NPR",
+    "ResourceDescription": "AIR FILTER",
+    "ResourceCode": 14020220,
+    "BinLocation": "CONTAINER-6",
+    "RackNo": "G-27"
+  },
+  {
+    "FleetDesc": "MINI TRUCK",
+    "Capacity": "3 - 5 MT",
+    "Make": "ISUZU",
+    "Model": "NPR",
+    "ResourceDescription": "GASKET",
+    "ResourceCode": 14016313,
+    "BinLocation": "CONTAINER-6",
+    "RackNo": "F1-53"
+  },
+  {
+    "FleetDesc": "MINI TRUCK",
+    "Capacity": "3 - 5 MT",
+    "Make": "ISUZU",
+    "Model": "NPR",
+    "ResourceDescription": "GASKET",
+    "ResourceCode": 14016317,
+    "BinLocation": "CONTAINER-6",
+    "RackNo": "F1-54"
+  },
+  {
+    "FleetDesc": "MINI TRUCK",
+    "Capacity": "3 - 5 MT",
+    "Make": "ISUZU",
+    "Model": "NPR",
+    "ResourceDescription": "RADIATOR HOSE",
+    "ResourceCode": 14016323,
+    "BinLocation": "CONTAINER-6",
+    "RackNo": "F3-56"
+  },
+  {
+    "FleetDesc": "MINI BUS",
+    "Capacity": "26 SEATER",
+    "Make": "MITSUBISHI",
+    "Model": "ROSA",
+    "ResourceDescription": "AC EVAPORATOR",
+    "ResourceCode": 14013107,
+    "PARTNO": "ML272911",
+    "BinLocation": "CONTAINER-7",
+    "RackNo": "E-19"
+  },
+  {
+    "FleetDesc": "MINI BUS",
+    "Capacity": "26 SEATER",
+    "Make": "MITSUBISHI",
+    "Model": "ROSA",
+    "ResourceDescription": "FAN MOTOR ASSY",
+    "ResourceCode": 14013109,
+    "PARTNO": "ML324280",
+    "BinLocation": "CONTAINER-7",
+    "RackNo": "E-20"
+  },
+  {
+    "FleetDesc": "MINI BUS",
+    "Capacity": "26 SEATER",
+    "Make": "MITSUBISHI",
+    "Model": "ROSA",
+    "ResourceDescription": "RECIEVER ASSY",
+    "ResourceCode": 14001956,
+    "PARTNO": "MK583451",
+    "BinLocation": "CONTAINER-7",
+    "RackNo": "E-21"
+  },
+  {
+    "FleetDesc": "MINI BUS",
+    "Capacity": "26 SEATER",
+    "Make": "MITSUBISHI",
+    "Model": "ROSA",
+    "ResourceDescription": "AC COMPRESSOR",
+    "ResourceCode": 14013110,
+    "PARTNO": "ML289771",
+    "BinLocation": "CONTAINER-7",
+    "RackNo": "E-24"
+  },
+  {
+    "FleetDesc": "MINI BUS",
+    "Capacity": "26 SEATER",
+    "Make": "MITSUBISHI",
+    "Model": "ROSA",
+    "ResourceDescription": "CABIN AC FILTER",
+    "ResourceCode": 14014888,
+    "PARTNO": "7803A112",
+    "BinLocation": "CONTAINER-7",
+    "RackNo": "E-024"
+  },
+  {
+    "FleetDesc": "MINI BUS",
+    "Capacity": "26 SEATER",
+    "Make": "MITSUBISHI",
+    "Model": "ROSA",
+    "ResourceDescription": "EXPANSION VALVE",
+    "ResourceCode": 14019083,
+    "BinLocation": "CONTAINER-7",
+    "RackNo": "E-25"
+  },
+  {
+    "FleetDesc": "MINI BUS",
+    "Capacity": "26 SEATER",
+    "Make": "MITSUBISHI",
+    "Model": "ROSA",
+    "ResourceDescription": "AC EXPANSION VLAVE",
+    "ResourceCode": 14016063,
+    "BinLocation": "CONTAINER-7",
+    "RackNo": "E-26"
+  },
+  {
+    "FleetDesc": "MINI BUS",
+    "Capacity": "26 SEATER",
+    "Make": "MITSUBISHI",
+    "Model": "ROSA",
+    "ResourceDescription": "BRAKEPAD",
+    "ResourceCode": 14016063,
+    "BinLocation": "CONTAINER-6",
+    "RackNo": "C"
+  },
+  {
+    "FleetDesc": "MINI BUS",
+    "Capacity": "23 SEATER",
+    "Make": "TOYOTA",
+    "Model": "COASTER",
+    "ResourceDescription": "OIL FILTER",
+    "ResourceCode": 14020188,
+    "BinLocation": "CONTAINER-5",
+    "RackNo": "G-9"
+  },
+  {
+    "FleetDesc": "MINI BUS",
+    "Capacity": "23 SEATER",
+    "Make": "TOYOTA",
+    "Model": "COASTER",
+    "ResourceDescription": "AIR FILTER",
+    "ResourceCode": 14020221,
+    "BinLocation": "CONTAINER-5",
+    "RackNo": "G-9"
+  },
+  {
+    "FleetDesc": "MINI BUS",
+    "Capacity": "23 SEATER",
+    "Make": "TOYOTA",
+    "Model": "COASTER",
+    "ResourceDescription": "BRAKE PAD",
+    "ResourceCode": 14020212,
+    "BinLocation": "CONTAINER-5",
+    "RackNo": "G-9"
+  },
+  {
+    "FleetDesc": "MINI BUS",
+    "Capacity": "23 SEATER",
+    "Make": "TOYOTA",
+    "Model": "COASTER",
+    "ResourceDescription": "BRAKE SHOE",
+    "ResourceCode": 14005508,
+    "BinLocation": "CONTAINER-5",
+    "RackNo": "G-9"
+  },
+  {
+    "FleetDesc": "FOOD TRUCK",
+    "Capacity": "7.7 Ton",
+    "Make": "ISUZU",
+    "Model": "FRR",
+    "ResourceDescription": "INDICATOR LAMP",
+    "ResourceCode": 14010610,
+    "PARTNO": 8981554590,
+    "BinLocation": "CONTAINER-7"
+  },
+  {
+    "FleetDesc": "FOOD TRUCK",
+    "Capacity": "7.7 Ton",
+    "Make": "ISUZU",
+    "Model": "FRR",
+    "ResourceDescription": "LAMP ASSY",
+    "ResourceCode": 14010596,
+    "PARTNO": 8981554580,
+    "BinLocation": "CONTAINER-7"
+  },
+  {
+    "FleetDesc": "FOOD TRUCK",
+    "Capacity": "7.7 Ton",
+    "Make": "ISUZU",
+    "Model": "FRR",
+    "ResourceDescription": "LAMP ASSY REAR RH",
+    "ResourceCode": 14023086,
+    "PARTNO": 8982236160,
+    "BinLocation": "CONTAINER-7"
+  },
+  {
+    "FleetDesc": "FOOD TRUCK",
+    "Capacity": "7.7 Ton",
+    "Make": "ISUZU",
+    "Model": "FRR",
+    "ResourceDescription": "LAMP ASSY REAR LH",
+    "ResourceCode": 14023087,
+    "PARTNO": 8982236150,
+    "BinLocation": "CONTAINER-7"
+  },
+  {
+    "FleetDesc": "DUMP TRUCK - TRUCK MOUNTED",
+    "Capacity": "16 - 18 CUM",
+    "Make": "MERCEDES BENZ",
+    "Model": "ACTROS",
+    "ResourceDescription": "EVAPORATOR",
+    "ResourceCode": 14001865,
+    "BinLocation": "CONTAINER-6",
+    "RackNo": "E-22"
+  },
+  {
+    "FleetDesc": "DUMP TRUCK - TRUCK MOUNTED",
+    "Capacity": "16 - 18 CUM",
+    "Make": "MERCEDES BENZ",
+    "Model": "ACTROS",
+    "ResourceDescription": "EXPANSION VALVE",
+    "ResourceCode": 14001037,
+    "BinLocation": "CONTAINER-6",
+    "RackNo": "G"
+  },
+  {
+    "FleetDesc": "DUMP TRUCK - TRUCK MOUNTED",
+    "Capacity": "16 - 18 CUM",
+    "Make": "MERCEDES BENZ",
+    "Model": "ACTROS",
+    "ResourceDescription": "OIL FILTER",
+    "ResourceCode": 14000725,
+    "BinLocation": "CONTAINER-6",
+    "RackNo": "F6-83"
+  },
+  {
+    "FleetDesc": "DUMP TRUCK - TRUCK MOUNTED",
+    "Capacity": "16 - 18 CUM",
+    "Make": "MERCEDES BENZ",
+    "Model": "ACTROS",
+    "ResourceDescription": "FUEL FILTER",
+    "ResourceCode": 14000726,
+    "BinLocation": "CONTAINER-6",
+    "RackNo": "E"
+  },
+  {
+    "FleetDesc": "DUMP TRUCK - TRUCK MOUNTED",
+    "Capacity": "16 - 18 CUM",
+    "Make": "MERCEDES BENZ",
+    "Model": "ACTROS",
+    "ResourceDescription": "AIR FILTER",
+    "ResourceCode": 14000727,
+    "BinLocation": "CONTAINER-9"
+  },
+  {
+    "FleetDesc": "DUMP TRUCK - TRUCK MOUNTED",
+    "Capacity": "16 - 18 CUM",
+    "Make": "MERCEDES BENZ",
+    "Model": "ACTROS",
+    "ResourceDescription": "AC COMPRESSOR 4 BOLT",
+    "ResourceCode": 14002014,
+    "BinLocation": "CONTAINER-6",
+    "RackNo": "F6-81"
+  },
+  {
+    "FleetDesc": "DUMP TRUCK - TRUCK MOUNTED",
+    "Capacity": "16 - 18 CUM",
+    "Make": "MERCEDES BENZ",
+    "Model": "ACTROS",
+    "ResourceDescription": "AC COMPRESSOR 3 BOLT",
+    "ResourceCode": 14001034,
+    "BinLocation": "CONTAINER-6",
+    "RackNo": "F6-82"
+  },
+  {
+    "FleetDesc": "DUMP TRUCK - TRUCK MOUNTED",
+    "Capacity": "16 - 18 CUM",
+    "Make": "MERCEDES BENZ",
+    "Model": "ACTROS",
+    "ResourceDescription": "STABILIZER BUSH",
+    "ResourceCode": 14005063,
+    "BinLocation": "CONTAINER-6",
+    "RackNo": "F5-78"
+  },
+  {
+    "FleetDesc": "DUMP TRUCK - TRUCK MOUNTED",
+    "Capacity": "16 - 18 CUM",
+    "Make": "MERCEDES BENZ",
+    "Model": "ACTROS",
+    "ResourceDescription": "CLUTCH MASTER CYILINDER ",
+    "ResourceCode": 14016029,
+    "BinLocation": "CONTAINER-6",
+    "RackNo": "F5-73"
+  },
+  {
+    "FleetDesc": "DUMP TRUCK - TRUCK MOUNTED",
+    "Capacity": "16 - 18 CUM",
+    "Make": "MERCEDES BENZ",
+    "Model": "ACTROS",
+    "ResourceDescription": "FAN BELT",
+    "ResourceCode": 14005147,
+    "BinLocation": "CONTAINER-6",
+    "RackNo": "G5"
+  },
+  {
+    "FleetDesc": "DUMP TRUCK - TRUCK MOUNTED",
+    "Capacity": "16 - 18 CUM",
+    "Make": "MERCEDES BENZ",
+    "Model": "ACTROS",
+    "ResourceDescription": "WINDER MOTOR RH",
+    "ResourceCode": 14001699,
+    "BinLocation": "CONTAINER-6",
+    "RackNo": "G"
+  },
+  {
+    "FleetDesc": "DUMP TRUCK - TRUCK MOUNTED",
+    "Capacity": "16 - 18 CUM",
+    "Make": "MERCEDES BENZ",
+    "Model": "ACTROS",
+    "ResourceDescription": "WINDER MOTOR LH",
+    "ResourceCode": 14001700,
+    "BinLocation": "CONTAINER-6"
+  },
+  {
+    "FleetDesc": "DUMP TRUCK - TRUCK MOUNTED",
+    "Capacity": "16 - 18 CUM",
+    "Make": "MERCEDES BENZ",
+    "Model": "ACTROS",
+    "ResourceDescription": "BRAKE CYILINDER",
+    "ResourceCode": 14016941,
+    "BinLocation": "CONTAINER-6",
+    "RackNo": "H-27"
+  },
+  {
+    "FleetDesc": "DUMP TRUCK - TRUCK MOUNTED",
+    "Capacity": "16 - 18 CUM",
+    "Make": "MERCEDES BENZ",
+    "Model": "ACTROS",
+    "ResourceDescription": "DOOR LOCK ASSY",
+    "ResourceCode": 14016035,
+    "BinLocation": "CONTAINER-6",
+    "RackNo": "F1-78"
+  },
+  {
+    "FleetDesc": "DUMP TRUCK - TRUCK MOUNTED",
+    "Capacity": "16 - 18 CUM",
+    "Make": "MERCEDES BENZ",
+    "Model": "ACTROS",
+    "ResourceDescription": "CABIN SHOCK ABSORBER ",
+    "ResourceCode": 14016363,
+    "BinLocation": "CONTAINER-6",
+    "RackNo": "F1-63"
+  },
+  {
+    "FleetDesc": "DUMP TRUCK - TRUCK MOUNTED",
+    "Capacity": "16 - 18 CUM",
+    "Make": "MERCEDES BENZ",
+    "Model": "ACTROS",
+    "ResourceDescription": "BRAKE PAD FRONT",
+    "ResourceCode": 14016943,
+    "BinLocation": "CONTAINER-6",
+    "RackNo": "H-31"
+  },
+  {
+    "FleetDesc": "DUMP TRUCK - TRUCK MOUNTED",
+    "Capacity": "16 - 18 CUM",
+    "Make": "MERCEDES BENZ",
+    "Model": "ACTROS",
+    "ResourceDescription": "BRAKE PAD REAR",
+    "ResourceCode": 14002287,
+    "BinLocation": "CONTAINER-6",
+    "RackNo": "H-30"
+  },
+  {
+    "FleetDesc": "DUMP TRUCK - TRUCK MOUNTED",
+    "Capacity": "16 - 18 CUM",
+    "Make": "MERCEDES BENZ",
+    "Model": "ACTROS",
+    "ResourceDescription": "AXLE CABIN CYILINDER",
+    "ResourceCode": 14005123,
+    "BinLocation": "CONTAINER-6",
+    "RackNo": "H-28"
+  },
+  {
+    "FleetDesc": "DUMP TRUCK - TRUCK MOUNTED",
+    "Capacity": "16 - 18 CUM",
+    "Make": "MERCEDES BENZ",
+    "Model": "ACTROS",
+    "ResourceDescription": "TILT CYILINDER",
+    "ResourceCode": 14014932,
+    "BinLocation": "CONTAINER-6",
+    "RackNo": "H-29"
+  },
+  {
+    "FleetDesc": "DUMP TRUCK - TRUCK MOUNTED",
+    "Capacity": "16 - 18 CUM",
+    "Make": "RENAULT",
+    "Model": "KERAX",
+    "ResourceDescription": "OIL FILTER KIT",
+    "ResourceCode": 14003886,
+    "BinLocation": "CONTAINER-8"
+  },
+  {
+    "FleetDesc": "DUMP TRUCK - TRUCK MOUNTED",
+    "Capacity": "16 - 18 CUM",
+    "Make": "RENAULT",
+    "Model": "KERAX",
+    "ResourceDescription": "CLUTCH RELEASE BEARING",
+    "ResourceCode": 14013267,
+    "BinLocation": "CONTAINER-8",
+    "RackNo": "B-55"
+  },
+  {
+    "FleetDesc": "DUMP TRUCK - TRUCK MOUNTED",
+    "Capacity": "16 - 18 CUM",
+    "Make": "RENAULT",
+    "Model": "KERAX",
+    "ResourceDescription": "IDLER PULLEY",
+    "ResourceCode": 14016148,
+    "PARTNO": 7422923707,
+    "BinLocation": "CONTAINER-8",
+    "RackNo": "B-56"
+  },
+  {
+    "FleetDesc": "DUMP TRUCK - TRUCK MOUNTED",
+    "Capacity": "16 - 18 CUM",
+    "Make": "RENAULT",
+    "Model": "KERAX",
+    "ResourceDescription": "BALL BEARING",
+    "ResourceCode": 14013269,
+    "PARTNO": 7420512915,
+    "BinLocation": "CONTAINER-8",
+    "RackNo": "B-57"
+  },
+  {
+    "FleetDesc": "DUMP TRUCK - TRUCK MOUNTED",
+    "Capacity": "16 - 18 CUM",
+    "Make": "RENAULT",
+    "Model": "KERAX",
+    "ResourceDescription": "HOSE CLAMP",
+    "ResourceCode": 14016451,
+    "PARTNO": 7421044391,
+    "BinLocation": "CONTAINER-8",
+    "RackNo": "B-59"
+  },
+  {
+    "FleetDesc": "DUMP TRUCK - TRUCK MOUNTED",
+    "Capacity": "16 - 18 CUM",
+    "Make": "RENAULT",
+    "Model": "KERAX",
+    "ResourceDescription": "BRAKE LINING",
+    "ResourceCode": 14016446,
+    "BinLocation": "CONTAINER-8",
+    "RackNo": "B-66"
+  },
+  {
+    "FleetDesc": "DUMP TRUCK - TRUCK MOUNTED",
+    "Capacity": "16 - 18 CUM",
+    "Make": "RENAULT",
+    "Model": "KERAX",
+    "ResourceDescription": "FUEL FILTER",
+    "ResourceCode": 14016144,
+    "BinLocation": "CONTAINER-8",
+    "RackNo": "B-69"
+  },
+  {
+    "FleetDesc": "DUMP TRUCK - TRUCK MOUNTED",
+    "Capacity": "16 - 18 CUM",
+    "Make": "RENAULT",
+    "Model": "KERAX",
+    "ResourceDescription": "FUEL FILTER",
+    "ResourceCode": 14016147,
+    "BinLocation": "CONTAINER-8",
+    "RackNo": "B-70"
+  },
+  {
+    "FleetDesc": "DUMP TRUCK - TRUCK MOUNTED",
+    "Capacity": "16 - 18 CUM",
+    "Make": "HINO",
+    "Model": "ZS1EPVA700",
+    "ResourceDescription": "OIL FILTER",
+    "ResourceCode": 14001026,
+    "BinLocation": "CONTAINER-5"
+  },
+  {
+    "FleetDesc": "DUMP TRUCK - TRUCK MOUNTED",
+    "Capacity": "16 - 18 CUM",
+    "Make": "HINO",
+    "Model": "ZS1EPVA700",
+    "ResourceDescription": "OIL FILTER",
+    "ResourceCode": 14001024,
+    "BinLocation": "CONTAINER-5"
+  },
+  {
+    "FleetDesc": "DUMP TRUCK - TRUCK MOUNTED",
+    "Capacity": "16 - 18 CUM",
+    "Make": "HINO",
+    "Model": "ZS1EPVA700",
+    "ResourceDescription": "CLUTCH DISC",
+    "ResourceCode": 14001043,
+    "BinLocation": "CONTAINER-5",
+    "RackNo": "I4-636"
+  },
+  {
+    "FleetDesc": "DUMP TRUCK - TRUCK MOUNTED",
+    "Capacity": "16 - 18 CUM",
+    "Make": "HINO",
+    "Model": "ZS1EPVA700",
+    "ResourceDescription": "CLUTCH COVER",
+    "ResourceCode": 14001042,
+    "BinLocation": "CONTAINER-5",
+    "RackNo": "I4-635"
+  },
+  {
+    "FleetDesc": "DUMP TRUCK - TRUCK MOUNTED",
+    "Capacity": "16 - 18 CUM",
+    "Make": "HINO",
+    "Model": "ZS1EPVA700",
+    "ResourceDescription": "FLY WHEEL",
+    "ResourceCode": 14009250,
+    "BinLocation": "CONTAINER-5",
+    "RackNo": "I4-634"
+  },
+  {
+    "FleetDesc": "DUMP TRUCK - TRUCK MOUNTED",
+    "Capacity": "16 - 18 CUM",
+    "Make": "HINO",
+    "Model": "ZS1EPVA700",
+    "ResourceDescription": "RELEASE BEARING",
+    "ResourceCode": 14001044,
+    "BinLocation": "CONTAINER-5",
+    "RackNo": "E4-386"
+  },
+  {
+    "FleetDesc": "FOOD TRUCK",
+    "Capacity": "3 - 5 MT",
+    "Make": "MITSUBISHI",
+    "Model": "FUSO",
+    "ResourceDescription": "OIL FILTER",
+    "ResourceCode": 14000716,
+    "BinLocation": "CONTAINER-6"
+  },
+  {
+    "FleetDesc": "FOOD TRUCK",
+    "Capacity": "3 - 5 MT",
+    "Make": "MITSUBISHI",
+    "Model": "FUSO",
+    "ResourceDescription": "FUEL FILTER",
+    "ResourceCode": 14016080,
+    "BinLocation": "CONTAINER-6"
+  },
+  {
+    "FleetDesc": "FOOD TRUCK",
+    "Capacity": "3 - 5 MT",
+    "Make": "MITSUBISHI",
+    "Model": "FUSO",
+    "ResourceDescription": "AIR FILTER",
+    "ResourceCode": 14000718,
+    "BinLocation": "CONTAINER-6"
+  },
+  {
+    "FleetDesc": "FOOD TRUCK",
+    "Capacity": "3 - 5 MT",
+    "Make": "MITSUBISHI",
+    "Model": "FUSO",
+    "ResourceDescription": "WATER PUMP",
+    "ResourceCode": 14016955,
+    "BinLocation": "CONTAINER-6",
+    "RackNo": "A-31"
+  },
+  {
+    "FleetDesc": "FOOD TRUCK",
+    "Capacity": "3 - 5 MT",
+    "Make": "MITSUBISHI",
+    "Model": "FUSO",
+    "ResourceDescription": "RADIATOR RESERVE TANK",
+    "ResourceCode": 14001411,
+    "BinLocation": "CONTAINER-6",
+    "RackNo": "A-32"
+  },
+  {
+    "FleetDesc": "FOOD TRUCK",
+    "Capacity": "3 - 5 MT",
+    "Make": "MITSUBISHI",
+    "Model": "FUSO",
+    "ResourceDescription": "BRAKE SHOE ASSY",
+    "ResourceCode": 14016064,
+    "BinLocation": "CONTAINER-6",
+    "RackNo": "A-35"
+  },
+  {
+    "FleetDesc": "FOOD TRUCK",
+    "Capacity": "3 - 5 MT",
+    "Make": "MITSUBISHI",
+    "Model": "FUSO",
+    "ResourceDescription": "CLUTCH FAN",
+    "ResourceCode": 14016113,
+    "BinLocation": "CONTAINER-6",
+    "RackNo": "B-52"
+  },
+  {
+    "FleetDesc": "FOOD TRUCK",
+    "Capacity": "3 - 5 MT",
+    "Make": "MITSUBISHI",
+    "Model": "FUSO",
+    "ResourceDescription": "WHEEL BRAKE CYILINDER",
+    "ResourceCode": 14016109,
+    "BinLocation": "CONTAINER-6",
+    "RackNo": "B-53"
+  },
+  {
+    "FleetDesc": "FOOD TRUCK",
+    "Capacity": "3 - 5 MT",
+    "Make": "MITSUBISHI",
+    "Model": "FUSO",
+    "ResourceDescription": "TIE ROD END RH",
+    "ResourceCode": 14016406,
+    "BinLocation": "CONTAINER-6",
+    "RackNo": "C-26"
+  },
+  {
+    "FleetDesc": "FOOD TRUCK",
+    "Capacity": "3 - 5 MT",
+    "Make": "MITSUBISHI",
+    "Model": "FUSO",
+    "ResourceDescription": "TIE ROD END LH",
+    "ResourceCode": 14016405,
+    "BinLocation": "CONTAINER-6",
+    "RackNo": "C-27"
+  },
+  {
+    "FleetDesc": "FOOD TRUCK",
+    "Capacity": "3 - 5 MT",
+    "Make": "MITSUBISHI",
+    "Model": "FUSO",
+    "ResourceDescription": "WHEEL BRAKE CYILINDER REAR",
+    "ResourceCode": 14016106,
+    "BinLocation": "CONTAINER-6",
+    "RackNo": "C-34"
+  },
+  {
+    "FleetDesc": "FOOD TRUCK",
+    "Capacity": "3 - 5 MT",
+    "Make": "MITSUBISHI",
+    "Model": "FUSO",
+    "ResourceDescription": "WHEEL HUB OIL SEAL FRONT",
+    "ResourceCode": 14016407,
+    "BinLocation": "CONTAINER-6",
+    "RackNo": "C-35"
+  },
+  {
+    "FleetDesc": "FOOD TRUCK",
+    "Capacity": "3 - 5 MT",
+    "Make": "MITSUBISHI",
+    "Model": "FUSO",
+    "ResourceDescription": "WHEEL BRAKE CYILINDER REAR",
+    "ResourceCode": 14016108,
+    "BinLocation": "CONTAINER-6",
+    "RackNo": "C-36"
+  },
+  {
+    "FleetDesc": "FOOD TRUCK",
+    "Capacity": "3 - 5 MT",
+    "Make": "MITSUBISHI",
+    "Model": "FUSO",
+    "ResourceDescription": "SPRING BUSH",
+    "ResourceCode": 14013136,
+    "BinLocation": "CONTAINER-6",
+    "RackNo": "C-41"
+  },
+  {
+    "FleetDesc": "FOOD TRUCK",
+    "Capacity": "3 - 5 MT",
+    "Make": "MITSUBISHI",
+    "Model": "FUSO",
+    "ResourceDescription": "CLUTCH CYILINDER",
+    "ResourceCode": 14016066,
+    "BinLocation": "CONTAINER-6",
+    "RackNo": "C-46"
+  },
+  {
+    "FleetDesc": "FOOD TRUCK",
+    "Capacity": "3 - 5 MT",
+    "Make": "MITSUBISHI",
+    "Model": "FUSO",
+    "ResourceDescription": "BRAKE MASTER CYILINDER",
+    "ResourceCode": 14018422,
+    "BinLocation": "CONTAINER-6",
+    "RackNo": "C-53"
+  },
+  {
+    "FleetDesc": "FOOD TRUCK",
+    "Capacity": "3 - 5 MT",
+    "Make": "MITSUBISHI",
+    "Model": "FUSO",
+    "ResourceDescription": "WHEEL BRAKE CYILINDER",
+    "ResourceCode": 14016103,
+    "BinLocation": "CONTAINER-6",
+    "RackNo": "C-64"
+  },
+  {
+    "FleetDesc": "FOOD TRUCK",
+    "Capacity": "3 - 5 MT",
+    "Make": "MITSUBISHI",
+    "Model": "FUSO",
+    "ResourceDescription": "WHEEL BRAKE CYILINDER",
+    "ResourceCode": 14016104,
+    "BinLocation": "CONTAINER-6",
+    "RackNo": "C-65"
+  },
+  {
+    "FleetDesc": "FOOD TRUCK",
+    "Capacity": "3 - 5 MT",
+    "Make": "MITSUBISHI",
+    "Model": "FUSO",
+    "ResourceDescription": "WHEEL BRAKE CYILINDER",
+    "ResourceCode": 14016112,
+    "BinLocation": "CONTAINER-6",
+    "RackNo": "C-66"
+  },
+  {
+    "FleetDesc": "FOOD TRUCK",
+    "Capacity": "3 - 5 MT",
+    "Make": "MITSUBISHI",
+    "Model": "CANTER",
+    "ResourceDescription": "OIL FILTER SKIP",
+    "ResourceCode": 14012729,
+    "BinLocation": "CONTAINER-6",
+    "RackNo": "C-51"
+  },
+  {
+    "FleetDesc": "FOOD TRUCK",
+    "Capacity": "3 - 5 MT",
+    "Make": "MITSUBISHI",
+    "Model": "CANTER",
+    "ResourceDescription": "FUEL FILTER",
+    "ResourceCode": 14020007,
+    "BinLocation": "CONTAINER-6",
+    "RackNo": "C-63"
+  },
+  {
+    "FleetDesc": "FOOD TRUCK",
+    "Capacity": "3 - 5 MT",
+    "Make": "MITSUBISHI",
+    "Model": "CANTER",
+    "ResourceDescription": "RELEASE BEARING SKIP",
+    "ResourceCode": 14020015,
+    "PARTNO": "ME632049",
+    "BinLocation": "CONTAINER-6",
+    "RackNo": "C-61"
+  },
+  {
+    "FleetDesc": "FOOD TRUCK",
+    "Capacity": "3 - 5 MT",
+    "Make": "MITSUBISHI",
+    "Model": "CANTER",
+    "ResourceDescription": "OIL SEAL REAR SKIP",
+    "ResourceCode": 14020012,
+    "PARTNO": "ME034976",
+    "BinLocation": "CONTAINER-6",
+    "RackNo": "C-60"
+  },
+  {
+    "FleetDesc": "FOOD TRUCK",
+    "Capacity": "3 - 5 MT",
+    "Make": "MITSUBISHI",
+    "Model": "CANTER",
+    "ResourceDescription": "CLUTCH DISC SKIP",
+    "ResourceCode": 14020013,
+    "PARTNO": "ME523219",
+    "BinLocation": "CONTAINER-6",
+    "RackNo": "D-19"
+  },
+  {
+    "FleetDesc": "FOOD TRUCK",
+    "Capacity": "3 - 5 MT",
+    "Make": "MITSUBISHI",
+    "Model": "CANTER",
+    "ResourceDescription": "CLUTCH PRESSURE PLATE SKIP",
+    "ResourceCode": 14020014,
+    "PARTNO": "ME520848",
+    "BinLocation": "CONTAINER-6",
+    "RackNo": "D-20"
+  },
+  {
+    "FleetDesc": "FOOD TRUCK",
+    "Capacity": "3 - 5 MT",
+    "Make": "MITSUBISHI",
+    "Model": "CANTER",
+    "ResourceDescription": " FLY WHEEL ASSY SKIP",
+    "ResourceCode": 14020016,
+    "PARTNO": "ME072248",
+    "BinLocation": "CONTAINER-6",
+    "RackNo": "D-21"
+  },
+  {
+    "FleetDesc": "PICK UP DOUBLE CAB",
+    "Capacity": "5 SEATER",
+    "Make": "DODGE",
+    "Model": "RAM 1200GL",
+    "ResourceDescription": "A/C BELT  DODGE  PN:6000611348",
+    "ResourceCode": 14012658
+  },
+  {
+    "FleetDesc": "PICK UP DOUBLE CAB",
+    "Capacity": "5 SEATER",
+    "Make": "DODGE",
+    "Model": "RAM 1200GL",
+    "ResourceDescription": "A/C CONDENSER FAN  DODGE  PN:6000610597",
+    "ResourceCode": 14012655
+  },
+  {
+    "FleetDesc": "PICK UP DOUBLE CAB",
+    "Capacity": "5 SEATER",
+    "Make": "DODGE",
+    "Model": "RAM 1200GL",
+    "ResourceDescription": "A/C CONDENSOR  DODGE  PN:55038003AE",
+    "ResourceCode": 14002180
+  },
+  {
+    "FleetDesc": "PICK UP DOUBLE CAB",
+    "Capacity": "5 SEATER",
+    "Make": "DODGE",
+    "Model": "RAM 1200GL",
+    "ResourceDescription": "A/C EVAPORATOR  DODGE  PN:68089098AA",
+    "ResourceCode": 14002577
+  },
+  {
+    "FleetDesc": "PICK UP DOUBLE CAB",
+    "Capacity": "5 SEATER",
+    "Make": "DODGE",
+    "Model": "RAM 1200GL",
+    "ResourceDescription": "AIR FILTER  DODGE  PN:1500A098",
+    "ResourceCode": 14001806
+  },
+  {
+    "FleetDesc": "PICK UP DOUBLE CAB",
+    "Capacity": "5 SEATER",
+    "Make": "DODGE",
+    "Model": "RAM 1200GL",
+    "ResourceDescription": "BLOWER WITH MOTOR WHEEL  DODGE  PN:68079477AB",
+    "ResourceCode": 14001289
+  },
+  {
+    "FleetDesc": "PICK UP DOUBLE CAB",
+    "Capacity": "5 SEATER",
+    "Make": "DODGE",
+    "Model": "RAM 1200GL",
+    "ResourceDescription": "BRAKE BOOSTER  DODGE  PN:04560182AF",
+    "ResourceCode": 14023289
+  },
+  {
+    "FleetDesc": "PICK UP DOUBLE CAB",
+    "Capacity": "5 SEATER",
+    "Make": "DODGE",
+    "Model": "RAM 1200GL",
+    "ResourceDescription": "CABIN AIR FILTER  DODGE  PN:68079487AA",
+    "ResourceCode": 14001290
+  },
+  {
+    "FleetDesc": "PICK UP DOUBLE CAB",
+    "Capacity": "5 SEATER",
+    "Make": "DODGE",
+    "Model": "RAM 1200GL",
+    "ResourceDescription": "OIL FILTER  DODGE  PN:68079744AA",
+    "ResourceCode": 14001291
+  },
+  {
+    "FleetDesc": "PICK UP DOUBLE CAB",
+    "Capacity": "5 SEATER",
+    "Make": "DODGE",
+    "Model": "RAM 1200GL",
+    "ResourceDescription": "OIL FILTER  DODGE  PN:MZ690115",
+    "ResourceCode": 14001805
+  },
+  {
+    "FleetDesc": "PICK UP DOUBLE CAB",
+    "Capacity": "5 SEATER",
+    "Make": "DODGE",
+    "Model": "RAM 1200GL",
+    "ResourceDescription": "TAIL LAMP  DODGE  PN:55079136AF",
+    "ResourceCode": 14020757
+  },
+  {
+    "FleetDesc": "PICK UP DOUBLE CAB",
+    "Capacity": "5 SEATER",
+    "Make": "DODGE",
+    "Model": "RAM 1200GL",
+    "ResourceDescription": "TAIL LAMP  DODGE  PN:57010273AG",
+    "ResourceCode": 14020758
+  },
+  {
+    "FleetDesc": "PICK UP DOUBLE CAB",
+    "Capacity": "5 SEATER",
+    "Make": "DODGE",
+    "Model": "RAM 1200GL",
+    "ResourceDescription": "V-BELT(FAN DRIVE)  DODGE  RAM1200",
+    "ResourceCode": 14001183
+  },
+  {
+    "FleetDesc": "PICK UP DOUBLE CAB",
+    "Capacity": "5 SEATER",
+    "Make": "DODGE",
+    "Model": "RAM 1200GL",
+    "ResourceDescription": "V-BELT(STEERING PUMP DRIVE)  DODGE  RAM1200",
+    "ResourceCode": 14001184
+  },
+  {
+    "FleetDesc": "PICK UP DOUBLE CAB",
+    "Capacity": "5 SEATER",
+    "Make": "DODGE",
+    "Model": "RAM 1200GL",
+    "ResourceDescription": "WINDOW & DOOR LOCK SWITCH  DODGE  PN:68620461AA",
+    "ResourceCode": 14021675
+  },
+  {
+    "FleetDesc": "PICK UP DOUBLE CAB",
+    "Capacity": "5 SEATER",
+    "Make": "DODGE",
+    "Model": "RAM 1200GL",
+    "ResourceDescription": "WIPER BLADE FRONT LH  DODGE  PN:WBF00022AB",
+    "ResourceCode": 14021088
+  },
+  {
+    "FleetDesc": "PICK UP DOUBLE CAB",
+    "Capacity": "5 SEATER",
+    "Make": "DODGE",
+    "Model": "RAM 1200GL",
+    "ResourceDescription": "WIPER BLADE FRONT RH  DODGE  PN:WBF00021AB",
+    "ResourceCode": 14021087
+  },
+  {
+    "FleetDesc": "CAR",
+    "Capacity": "5  SEATER",
+    "Make": "CHRYSLER",
+    "Model": 200,
+    "ResourceDescription": "AIR FILTER  CHRYSLER  PN:04861756AA",
+    "ResourceCode": 14010442
+  },
+  {
+    "FleetDesc": "CAR",
+    "Capacity": "5  SEATER",
+    "Make": "CHRYSLER",
+    "Model": 200,
+    "ResourceDescription": "BRAKE PAD REAR  CHRYSLER  PN:68225301AD",
+    "ResourceCode": 14003890
+  },
+  {
+    "FleetDesc": "CAR",
+    "Capacity": "5  SEATER",
+    "Make": "CHRYSLER",
+    "Model": 200,
+    "ResourceDescription": "CABIN AIR FILTER  CHRYSLER  PN:68223044-AB001",
+    "ResourceCode": 14001853
+  },
+  {
+    "FleetDesc": "CAR",
+    "Capacity": "5  SEATER",
+    "Make": "CHRYSLER",
+    "Model": 200,
+    "ResourceDescription": "HEATER HOSE  CHRYSLER  PN:68104972AA",
+    "ResourceCode": 14017868
+  },
+  {
+    "FleetDesc": "CAR",
+    "Capacity": "5  SEATER",
+    "Make": "CHRYSLER",
+    "Model": 200,
+    "ResourceDescription": "HEATER SUPPLY JUMPER HOSE  CHRYSLER  PN:68199254AB",
+    "ResourceCode": 14017867
+  },
+  {
+    "FleetDesc": "CAR",
+    "Capacity": "5  SEATER",
+    "Make": "CHRYSLER",
+    "Model": 200,
+    "ResourceDescription": "LAMBDA SENSOR  CHRYSLER  PN:5149180AA",
+    "ResourceCode": 14003531
+  },
+  {
+    "FleetDesc": "CAR",
+    "Capacity": "5  SEATER",
+    "Make": "CHRYSLER",
+    "Model": 200,
+    "ResourceDescription": "LINK ASSEMBLY CAMBER  CHRYSLER  PN:68207620AA",
+    "ResourceCode": 14020318
+  },
+  {
+    "FleetDesc": "CAR",
+    "Capacity": "5  SEATER",
+    "Make": "CHRYSLER",
+    "Model": 200,
+    "ResourceDescription": "LINK ASSEMBLY TOE  CHRYSLER  PN:5090124AA",
+    "ResourceCode": 14020317
+  },
+  {
+    "FleetDesc": "CAR",
+    "Capacity": "5  SEATER",
+    "Make": "CHRYSLER",
+    "Model": 200,
+    "ResourceDescription": "LOCKING NUT  CHRYSLER  PN:6106208AA",
+    "ResourceCode": 14020321
+  },
+  {
+    "FleetDesc": "CAR",
+    "Capacity": "5  SEATER",
+    "Make": "CHRYSLER",
+    "Model": 200,
+    "ResourceDescription": "LOWER ARM FRONT LH  CHRYSLER",
+    "ResourceCode": 14001055
+  },
+  {
+    "FleetDesc": "CAR",
+    "Capacity": "5  SEATER",
+    "Make": "CHRYSLER",
+    "Model": 200,
+    "ResourceDescription": "LOWER ARM FRONT RH  CHRYSLER",
+    "ResourceCode": 14001056
+  },
+  {
+    "FleetDesc": "CAR",
+    "Capacity": "5  SEATER",
+    "Make": "CHRYSLER",
+    "Model": 200,
+    "ResourceDescription": "LOWER CONTROL ARM FRONT LH  CHRYSLER  PN:68228521AE",
+    "ResourceCode": 14002356
+  },
+  {
+    "FleetDesc": "CAR",
+    "Capacity": "5  SEATER",
+    "Make": "CHRYSLER",
+    "Model": 200,
+    "ResourceDescription": "LOWER CONTROL ARM FRONT RH  CHRYSLER  PN:68211642AE",
+    "ResourceCode": 14002355
+  },
+  {
+    "FleetDesc": "CAR",
+    "Capacity": "5  SEATER",
+    "Make": "CHRYSLER",
+    "Model": 200,
+    "ResourceDescription": "MASTER CYLINDER COVER  CHRYSLER  PN:68211910AB",
+    "ResourceCode": 14017870
+  },
+  {
+    "FleetDesc": "CAR",
+    "Capacity": "5  SEATER",
+    "Make": "CHRYSLER",
+    "Model": 200,
+    "ResourceDescription": "RETURN HEATER HOSE  CHRYSLER  PN:52014627AB",
+    "ResourceCode": 14017869
+  },
+  {
+    "FleetDesc": "CAR",
+    "Capacity": "5  SEATER",
+    "Make": "CHRYSLER",
+    "Model": 200,
+    "ResourceDescription": "SHOCK ABSORBER REAR  CHRYSLER  PN:68253167AA",
+    "ResourceCode": 14020319
+  },
+  {
+    "FleetDesc": "CAR",
+    "Capacity": "5  SEATER",
+    "Make": "CHRYSLER",
+    "Model": 200,
+    "ResourceDescription": "SHOCK ABSORBER REAR  CHRYSLER  PN:68253167AB",
+    "ResourceCode": 14020320
+  },
+  {
+    "FleetDesc": "CAR",
+    "Capacity": "5  SEATER",
+    "Make": "CHRYSLER",
+    "Model": 200,
+    "ResourceDescription": "STABILIZER BAR LINK  CHRYSLER  PN:68241038AA",
+    "ResourceCode": 14002357
+  },
+  {
+    "FleetDesc": "CAR",
+    "Capacity": "5  SEATER",
+    "Make": "CHRYSLER",
+    "Model": 200,
+    "ResourceDescription": "STABILIZER BAR LINK  CHRYSLER  PN:68241038AA",
+    "ResourceCode": 14002357
+  },
+  {
+    "FleetDesc": "CAR",
+    "Capacity": "5  SEATER",
+    "Make": "CHRYSLER",
+    "Model": 200,
+    "ResourceDescription": "STABILIZER BAR REAR SUSPENSION  CHRYSLER  PN:68161271AB",
+    "ResourceCode": 14020322
+  },
+  {
+    "FleetDesc": "CAR",
+    "Capacity": "5  SEATER",
+    "Make": "CHRYSLER",
+    "Model": 200,
+    "ResourceDescription": "STRUT FRONT SUSPENSION  CHRYSLER  PN:05272758AF",
+    "ResourceCode": 14020327
+  },
+  {
+    "FleetDesc": "CAR",
+    "Capacity": "5  SEATER",
+    "Make": "CHRYSLER",
+    "Model": 200,
+    "ResourceDescription": "STRUT FRONT SUSPENSION  CHRYSLER  PN:05272759AF",
+    "ResourceCode": 14020328
+  },
+  {
+    "FleetDesc": "CAR",
+    "Capacity": "5  SEATER",
+    "Make": "CHRYSLER",
+    "Model": 200,
+    "ResourceDescription": "WIPER BLADE FRONT LH  CHRYSLER  PN:68241705AA",
+    "ResourceCode": 14020376
+  },
+  {
+    "FleetDesc": "CAR",
+    "Capacity": "5  SEATER",
+    "Make": "CHRYSLER",
+    "Model": 200,
+    "ResourceDescription": "WIPER BLADE FRONT RH  CHRYSLER  PN:68241704AA",
+    "ResourceCode": 14020375
+  }
+        ];
+
+        function populateSelect(id, options) {
+            const select = document.getElementById(id);
+            select.innerHTML = `<option value="">Select ${id.replace('-', ' ').replace(/\b\w/g, l => l.toUpperCase())}</option>`;
+            options.forEach(option => {
+                select.innerHTML += `<option value="${option}">${option}</option>`;
+            });
+            if (id === 'resource-description') {
+                $(`#${id}`).select2({
+                    placeholder: "Select Resource Description",
+                    allowClear: true
+                });
+            }
+        }
+
+        function updateMakes() {
+            const fleetType = document.getElementById('fleet-type').value;
+            const makes = [...new Set(sparePartsData.filter(item => item.FleetDesc === fleetType).map(item => item.Make))];
+            populateSelect('make', makes);
+            updateCapacities();
+        }
+
+        function updateCapacities() {
+            const fleetType = document.getElementById('fleet-type').value;
+            const make = document.getElementById('make').value;
+            const capacities = [...new Set(sparePartsData.filter(item => item.FleetDesc === fleetType && item.Make === make).map(item => item.Capacity))];
+            populateSelect('capacity', capacities);
+            updateResourceDescriptions();
+        }
+
+        function updateResourceDescriptions() {
+            const fleetType = document.getElementById('fleet-type').value;
+            const make = document.getElementById('make').value;
+            const capacity = document.getElementById('capacity').value;
+            const resourceDescriptions = [...new Set(sparePartsData.filter(item => item.FleetDesc === fleetType && item.Make === make && item.Capacity === capacity).map(item => item.ResourceDescription))];
+            populateSelect('resource-description', resourceDescriptions);
+        }
+
+        function findSpareParts() {
+            const fleetType = document.getElementById('fleet-type').value;
+            const make = document.getElementById('make').value;
+            const capacity = document.getElementById('capacity').value;
+            const selectedResourceDescription = document.getElementById('resource-description').value;
+            const sparePartsList = document.getElementById('spare-parts-list');
+            sparePartsList.innerHTML = '';
+
+            if (fleetType && make && capacity && selectedResourceDescription) {
+                const spareParts = sparePartsData.filter(part => (
+                    part.FleetDesc === fleetType &&
+                    part.Make === make &&
+                    part.Capacity === capacity &&
+                    part.ResourceDescription === selectedResourceDescription
+                ));
+
+                const uniqueParts = new Set();
+                spareParts.forEach(part => {
+                    const uniqueKey = `${part.FleetDesc}-${part.Capacity}-${part.Make}-${part.Model}-${part.EngineMakeModel || ''}-${part.ResourceDescription}-${part.ResourceCode}-${part.PARTNO}-${part.BinLocation}-${part.RackNo}-${part.REMARKS || ''}`;
+                    if (!uniqueParts.has(uniqueKey)) {
+                        uniqueParts.add(uniqueKey);
+                        sparePartsList.innerHTML += `
+                            <div class="result-item">
+                                <strong>Fleet Description:</strong> ${part.FleetDesc}
+                                <strong>Capacity:</strong> ${part.Capacity}
+                                <strong>Make:</strong> ${part.Make}
+                                <strong>Model:</strong> ${part.Model}
+                                <strong>Engine Make & Model:</strong> ${part.EngineMakeModel || 'N/A'}
+                                <strong>Resource Description:</strong> ${part.ResourceDescription}
+                                <strong>Resource Code:</strong> ${part.ResourceCode}
+                                <strong>Part No:</strong> ${part.PARTNO}
+                                <strong>Bin Location:</strong> ${part.BinLocation}
+                                <strong>Rack No:</strong> ${part.RackNo}
+                                <strong>Remarks:</strong> ${part.REMARKS || 'None'}
+                            </div>`;
+                    }
+                });
+            }
+        }
+
+        function updateFleetTypes() {
+            const fleetTypes = [...new Set(sparePartsData.map(item => item.FleetDesc))];
+            populateSelect('fleet-type', fleetTypes);
+        }
+
+        $(document).ready(function() {
+            updateFleetTypes();
+            $('.searchable-dropdown').select2();
+        });
+    </script>
+</body>
+</html>
